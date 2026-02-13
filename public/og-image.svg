@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <g fill="white" transform="translate(200, 315) scale(1.5)">
+    <ellipse cx="0" cy="20" rx="28" ry="35"/>
+    <ellipse cx="-30" cy="-20" rx="14" ry="18" transform="rotate(-10 -30 -20)"/>
+    <ellipse cx="-10" cy="-35" rx="13" ry="17"/>
+    <ellipse cx="15" cy="-35" rx="13" ry="17"/>
+    <ellipse cx="35" cy="-18" rx="14" ry="18" transform="rotate(10 35 -18)"/>
+  </g>
+
+  <text x="320" y="280" font-family="sans-serif" font-weight="700" font-size="72" fill="white">PetSubtitles</text>
+  <text x="320" y="350" font-family="sans-serif" font-weight="400" font-size="32" fill="white" opacity="0.9">What Is Your Pet Really Thinking?</text>
+  <text x="320" y="420" font-family="sans-serif" font-weight="400" font-size="24" fill="white" opacity="0.7">AI-powered pet thought translation</text>
+</svg>

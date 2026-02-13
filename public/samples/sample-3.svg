@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500">
+  <rect width="400" height="500" fill="#3B82F6"/>
+
+  <!-- Pet silhouette area -->
+  <rect x="40" y="40" width="320" height="300" rx="16" fill="#60A5FA" opacity="0.3"/>
+  <text x="200" y="220" font-size="120" text-anchor="middle" dominant-baseline="middle">🐹</text>
+
+  <!-- Subtitle bar -->
+  <rect x="0" y="340" width="400" height="110" fill="rgba(0,0,0,0.7)"/>
+  <text x="200" y="380" font-family="sans-serif" font-weight="700" font-size="18" fill="white" text-anchor="middle">I am NOT hiding. This is my surveillance position.</text>
+
+  <!-- Branded footer -->
+  <rect x="0" y="450" width="400" height="50" fill="#F59E0B"/>
+  <text x="20" y="482" font-family="sans-serif" font-weight="700" font-size="16" fill="white">🐾 PetSubtitles</text>
+  <text x="380" y="482" font-family="sans-serif" font-size="14" fill="white" text-anchor="end">petsubtitles.com</text>
+</svg>
