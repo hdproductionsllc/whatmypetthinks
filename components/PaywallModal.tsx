@@ -1,20 +1,35 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { saveWaitlistEmail, getWaitlistEmail } from "@/lib/usageTracker";
+import { saveWaitlistEmail, getWaitlistEmail, getShareCreditsRemaining } from "@/lib/usageTracker";
+import { canUseWebShare, shareImage } from "@/lib/shareUtils";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  reason: "premium_voice" | "daily_limit";
+  reason: "no_credits" | "premium_voice";
+  lastResultImage?: string;
+  lastCaption?: string;
+  onShareToUnlock?: () => void;
 }
 
-export default function PaywallModal({ isOpen, onClose, reason }: Props) {
+export default function PaywallModal({
+  isOpen,
+  onClose,
+  reason,
+  lastResultImage,
+  lastCaption,
+  onShareToUnlock,
+}: Props) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [existingEmail, setExistingEmail] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const shareCreditsLeft = getShareCreditsRemaining();
+  const canShareToUnlock = shareCreditsLeft > 0 && lastResultImage && canUseWebShare();
 
   useEffect(() => {
     const existing = getWaitlistEmail();
@@ -25,10 +40,10 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current && !submitted) {
+    if (isOpen && inputRef.current && !submitted && !canShareToUnlock) {
       inputRef.current.focus();
     }
-  }, [isOpen, submitted]);
+  }, [isOpen, submitted, canShareToUnlock]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -42,6 +57,22 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
 
   if (!isOpen) return null;
 
+  const handleShareToUnlock = async () => {
+    if (!lastResultImage || !lastCaption) return;
+    setSharing(true);
+    try {
+      const shared = await shareImage(lastResultImage, lastCaption);
+      if (shared && onShareToUnlock) {
+        onShareToUnlock();
+        onClose();
+      }
+    } catch {
+      // Share cancelled or failed
+    } finally {
+      setSharing(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email.trim()) {
@@ -50,16 +81,6 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
       setExistingEmail(email.trim());
     }
   };
-
-  const headline =
-    reason === "premium_voice"
-      ? "Your pet has more to say!"
-      : "You've used all 3 free translations today!";
-
-  const subtext =
-    reason === "premium_voice"
-      ? "Premium voices are coming soon. Join the waitlist to unlock Sassy, Dramatic, Poetic, and more!"
-      : "Premium members get unlimited translations. Join the waitlist to be first in line!";
 
   return (
     <div
@@ -70,7 +91,7 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Premium waitlist"
+      aria-label="Get more translations"
     >
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-bounce-in">
         {/* Close button */}
@@ -86,47 +107,83 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Header */}
         <div className="text-center">
           <div className="mb-3 text-4xl">🐾</div>
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-charcoal">
-            {headline}
+            You&apos;re out of translations!
           </h2>
-          <p className="mt-2 text-sm text-charcoal-light">{subtext}</p>
         </div>
 
-        {submitted ? (
-          <div className="mt-6 rounded-2xl bg-green-50 p-4 text-center">
-            <p className="text-sm font-semibold text-green-700">
-              You&apos;re on the list! 🎉
+        {/* Share to unlock option */}
+        {canShareToUnlock && (
+          <div className="mt-5">
+            <p className="mb-3 text-center text-sm text-charcoal-light">
+              Share a result to earn 1 more translation
+              <span className="block text-xs text-charcoal/40 mt-1">
+                ({shareCreditsLeft} share credit{shareCreditsLeft !== 1 ? "s" : ""} left today)
+              </span>
             </p>
-            <p className="mt-1 text-xs text-green-600">
-              We&apos;ll notify {existingEmail} when premium launches.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-6">
-            <input
-              ref={inputRef}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/20"
-            />
             <button
-              type="submit"
-              className="btn-press mt-3 w-full rounded-xl bg-amber py-3 font-bold text-white shadow-md transition hover:bg-amber-dark"
+              onClick={handleShareToUnlock}
+              disabled={sharing}
+              className="btn-press w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px] disabled:opacity-50"
             >
-              Join Waitlist
+              {sharing ? "Opening share..." : "Share & Unlock 1 More"}
             </button>
-          </form>
+          </div>
         )}
+
+        {/* Divider */}
+        {canShareToUnlock && (
+          <div className="my-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-200" />
+            <span className="text-xs font-semibold text-gray-400">OR</span>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+        )}
+
+        {/* Premium waitlist */}
+        <div className={canShareToUnlock ? "" : "mt-5"}>
+          <p className="mb-3 text-center text-sm text-charcoal-light">
+            {canShareToUnlock
+              ? "Go unlimited — no sharing required"
+              : "Come back tomorrow for 3 more free shares, or go unlimited"}
+          </p>
+
+          {submitted ? (
+            <div className="rounded-2xl bg-green-50 p-4 text-center">
+              <p className="text-sm font-semibold text-green-700">
+                You&apos;re on the list! 🎉
+              </p>
+              <p className="mt-1 text-xs text-green-600">
+                We&apos;ll notify {existingEmail} when premium launches.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <input
+                ref={inputRef}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/20"
+              />
+              <button
+                type="submit"
+                className="btn-press mt-3 w-full rounded-xl bg-amber py-3 font-bold text-white shadow-md transition hover:bg-amber-dark min-h-[44px]"
+              >
+                Join Premium Waitlist — $3.99/mo
+              </button>
+            </form>
+          )}
+        </div>
 
         <button
           onClick={onClose}
-          className="mt-4 w-full py-2 text-sm text-gray-400 hover:text-gray-600"
+          className="mt-4 w-full py-2 text-sm text-gray-400 hover:text-gray-600 min-h-[44px]"
         >
           Maybe Later
         </button>

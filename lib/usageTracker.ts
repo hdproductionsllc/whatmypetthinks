@@ -1,36 +1,72 @@
 "use client";
 
-const FREE_DAILY_LIMIT = 3;
-const KEY_PREFIX = "petsubtitles_usage_";
+const INITIAL_FREE_CREDITS = 5;
+const MAX_SHARE_CREDITS_PER_DAY = 3;
+
+// Storage keys
+const CREDITS_USED_KEY = "petsubtitles_credits_used";
+const SHARE_CREDITS_KEY = "petsubtitles_share_credits_total";
 const WAITLIST_KEY = "petsubtitles_waitlist_email";
 
-function todayKey(): string {
+function sharesTodayKey(): string {
   const d = new Date();
-  return `${KEY_PREFIX}${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `petsubtitles_shares_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function getUsageToday(): number {
+function getNum(key: string): number {
   if (typeof window === "undefined") return 0;
-  const val = localStorage.getItem(todayKey());
+  const val = localStorage.getItem(key);
   return val ? parseInt(val, 10) : 0;
 }
 
-export function incrementUsage(): void {
+function setNum(key: string, val: number): void {
   if (typeof window === "undefined") return;
-  const current = getUsageToday();
-  localStorage.setItem(todayKey(), String(current + 1));
+  localStorage.setItem(key, String(val));
 }
 
-export function hasReachedLimit(): boolean {
-  return false; // unlimited
+/** Total credits available right now */
+export function getAvailableCredits(): number {
+  const used = getNum(CREDITS_USED_KEY);
+  const shareCredits = getNum(SHARE_CREDITS_KEY);
+  return Math.max(0, INITIAL_FREE_CREDITS + shareCredits - used);
 }
 
-export function getRemainingTranslations(): number {
-  return Infinity;
+/** Whether the user can translate right now */
+export function hasCredits(): boolean {
+  return getAvailableCredits() > 0;
 }
 
+/** Use one credit (call after successful translation) */
+export function useCredit(): void {
+  setNum(CREDITS_USED_KEY, getNum(CREDITS_USED_KEY) + 1);
+}
+
+/** How many share credits earned today */
+export function getShareCreditsToday(): number {
+  return getNum(sharesTodayKey());
+}
+
+/** Whether the user can still earn credits by sharing today */
+export function canEarnShareCredit(): boolean {
+  return getShareCreditsToday() < MAX_SHARE_CREDITS_PER_DAY;
+}
+
+/** Earn a credit by sharing. Returns true if credit was earned, false if daily limit hit. */
+export function earnShareCredit(): boolean {
+  if (!canEarnShareCredit()) return false;
+  setNum(SHARE_CREDITS_KEY, getNum(SHARE_CREDITS_KEY) + 1);
+  setNum(sharesTodayKey(), getShareCreditsToday() + 1);
+  return true;
+}
+
+/** How many share credits remain earnable today */
+export function getShareCreditsRemaining(): number {
+  return Math.max(0, MAX_SHARE_CREDITS_PER_DAY - getShareCreditsToday());
+}
+
+/** Premium voice check — all voices free for now */
 export function isPremiumVoice(voiceId: string): boolean {
-  return false; // all voices unlocked for now
+  return false;
 }
 
 export function saveWaitlistEmail(email: string): void {

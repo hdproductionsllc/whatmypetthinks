@@ -8,12 +8,14 @@ import {
   generateFilename,
   copyLinkToClipboard,
 } from "@/lib/shareUtils";
+import { canEarnShareCredit } from "@/lib/usageTracker";
 
 interface Props {
   standardImageUrl: string;
   storyImageUrl: string;
   caption: string;
   voiceStyle?: string;
+  onShareComplete?: () => void;
 }
 
 export default function ShareButtons({
@@ -21,17 +23,22 @@ export default function ShareButtons({
   storyImageUrl,
   caption,
   voiceStyle,
+  onShareComplete,
 }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const webShareAvailable = canUseWebShare();
+  const canEarnCredit = canEarnShareCredit();
 
   const showToast = (message: string) => {
     setToast(message);
-    setTimeout(() => setToast(null), 2500);
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleShare = async (dataUrl: string, isStory: boolean) => {
     const shared = await shareImage(dataUrl, caption, voiceStyle, isStory);
+    if (shared && onShareComplete) {
+      onShareComplete();
+    }
     if (!shared && !webShareAvailable) {
       downloadImage(dataUrl, generateFilename(voiceStyle, isStory));
       showToast("Photo saved!");
@@ -43,11 +50,21 @@ export default function ShareButtons({
     showToast(copied ? "Link copied! 🐾" : "Could not copy link");
   };
 
+  const shareLabel = canEarnCredit
+    ? "Share & Earn a Free Translation"
+    : "Share This Masterpiece";
+
+  const shareLabelShort = canEarnCredit
+    ? "Share & Earn 1 Free"
+    : "Share";
+
   return (
     <div className="px-4 py-3 animate-fade-up" style={{ animationDelay: "0.15s" }}>
       {/* Big share CTA */}
       <p className="mb-2 text-center text-sm font-bold text-charcoal">
-        Your friends need to see this 👇
+        {canEarnCredit
+          ? "Share to earn a bonus translation 👇"
+          : "Your friends need to see this 👇"}
       </p>
 
       {webShareAvailable ? (
@@ -55,8 +72,8 @@ export default function ShareButtons({
           onClick={() => handleShare(standardImageUrl, false)}
           className="btn-press mb-2 w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px]"
         >
-          <span className="sm:hidden">Share</span>
-          <span className="hidden sm:inline">Share This Masterpiece</span>
+          <span className="sm:hidden">{shareLabelShort}</span>
+          <span className="hidden sm:inline">{shareLabel}</span>
         </button>
       ) : (
         <button

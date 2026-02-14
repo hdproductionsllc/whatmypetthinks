@@ -16,9 +16,10 @@ import RecentHistory, {
 import { processImageFile } from "@/lib/imageUtils";
 import { compositeSubtitles } from "@/lib/imageCompositor";
 import {
-  hasReachedLimit,
-  incrementUsage,
-  isPremiumVoice,
+  hasCredits,
+  useCredit,
+  earnShareCredit,
+  getAvailableCredits,
 } from "@/lib/usageTracker";
 import type { VoiceStyle } from "@/lib/anthropic";
 
@@ -39,9 +40,10 @@ export default function Home() {
   const [storyImage, setStoryImage] = useState("");
   const [error, setError] = useState("");
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paywallReason, setPaywallReason] = useState<"premium_voice" | "daily_limit">("premium_voice");
   const [isOffline, setIsOffline] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
+  const [creditRefresh, setCreditRefresh] = useState(0);
+  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Track online/offline
   useEffect(() => {
@@ -54,6 +56,10 @@ export default function Home() {
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("online", goOnline);
     };
+  }, []);
+
+  const refreshCredits = useCallback(() => {
+    setCreditRefresh((k) => k + 1);
   }, []);
 
   const handleImageSelected = useCallback(async (file: File) => {
@@ -87,14 +93,8 @@ export default function Home() {
 
     const voiceToUse = voice ?? selectedVoice;
 
-    if (hasReachedLimit()) {
-      setPaywallReason("daily_limit");
-      setPaywallOpen(true);
-      return;
-    }
-
-    if (isPremiumVoice(voiceToUse)) {
-      setPaywallReason("premium_voice");
+    // Check credits
+    if (!hasCredits()) {
       setPaywallOpen(true);
       return;
     }
@@ -131,8 +131,9 @@ export default function Home() {
       setStandardImage(composited.standardDataUrl);
       setStoryImage(composited.storyDataUrl);
 
-      // Track usage
-      incrementUsage();
+      // Use a credit
+      useCredit();
+      refreshCredits();
 
       // Save to history
       const thumbnail = await createThumbnail(composited.standardDataUrl);
@@ -153,7 +154,7 @@ export default function Home() {
       );
       setAppState("error");
     }
-  }, [imageData, selectedVoice]);
+  }, [imageData, selectedVoice, refreshCredits]);
 
   const handleVoiceSelect = useCallback((voice: VoiceStyle) => {
     setSelectedVoice(voice);
@@ -162,6 +163,24 @@ export default function Home() {
       doTranslate(voice);
     }
   }, [appState, imageData, doTranslate]);
+
+  const handleShareComplete = useCallback(() => {
+    const earned = earnShareCredit();
+    refreshCredits();
+    if (earned) {
+      setShareToast("Earned 1 bonus translation! 🐾");
+      setTimeout(() => setShareToast(null), 3000);
+    }
+  }, [refreshCredits]);
+
+  const handleShareToUnlock = useCallback(() => {
+    const earned = earnShareCredit();
+    refreshCredits();
+    if (earned) {
+      setShareToast("Translation unlocked! 🐾");
+      setTimeout(() => setShareToast(null), 3000);
+    }
+  }, [refreshCredits]);
 
   const handleRestore = useCallback((item: HistoryItem) => {
     setCaption(item.caption);
@@ -174,12 +193,21 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
-      <Header />
+      <Header creditRefresh={creditRefresh} />
 
       {/* Offline banner */}
       {isOffline && (
         <div className="mx-4 mb-2 rounded-xl bg-red-50 px-4 py-2 text-center text-sm font-semibold text-red-600">
           You&apos;re offline. Connect to the internet to translate.
+        </div>
+      )}
+
+      {/* Share credit toast */}
+      {shareToast && (
+        <div className="toast-enter mx-4 mb-2 flex justify-center">
+          <div className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white shadow-lg">
+            {shareToast}
+          </div>
         </div>
       )}
 
@@ -243,17 +271,18 @@ export default function Home() {
             storyImageUrl={storyImage}
             caption={caption}
             voiceStyle={selectedVoice}
+            onShareComplete={handleShareComplete}
           />
           <div className="flex gap-2 px-4 py-1">
             <button
               onClick={() => doTranslate()}
-              className="btn-press flex-1 rounded-2xl bg-amber/10 py-3 text-sm font-bold text-amber transition hover:bg-amber/20"
+              className="btn-press flex-1 rounded-2xl bg-amber/10 py-3 text-sm font-bold text-amber transition hover:bg-amber/20 min-h-[44px]"
             >
               🔄 Try Again
             </button>
             <button
               onClick={handleClear}
-              className="btn-press flex-1 rounded-2xl bg-gray-100 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200"
+              className="btn-press flex-1 rounded-2xl bg-gray-100 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200 min-h-[44px]"
             >
               📷 New Photo
             </button>
@@ -278,7 +307,10 @@ export default function Home() {
       <PaywallModal
         isOpen={paywallOpen}
         onClose={() => setPaywallOpen(false)}
-        reason={paywallReason}
+        reason="no_credits"
+        lastResultImage={standardImage || undefined}
+        lastCaption={caption || undefined}
+        onShareToUnlock={handleShareToUnlock}
       />
     </div>
   );

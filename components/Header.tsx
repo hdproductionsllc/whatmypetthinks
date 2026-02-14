@@ -1,14 +1,18 @@
 "use client";
 
-import { getRemainingTranslations } from "@/lib/usageTracker";
+import { getAvailableCredits } from "@/lib/usageTracker";
 import { useEffect, useState } from "react";
 
-export default function Header() {
-  const [remaining, setRemaining] = useState(3);
+interface Props {
+  creditRefresh?: number;
+}
+
+export default function Header({ creditRefresh }: Props) {
+  const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
-    setRemaining(getRemainingTranslations());
-  }, []);
+    setCredits(getAvailableCredits());
+  }, [creditRefresh]);
 
   return (
     <header className="flex items-center justify-between px-4 py-3">
@@ -32,9 +36,15 @@ export default function Header() {
           PetSubtitles
         </h1>
       </div>
-      <div className="rounded-full bg-amber/10 px-3 py-1 text-sm font-semibold text-amber">
-        Pro
-      </div>
+      {credits !== null && (
+        <div className={`rounded-full px-3 py-1 text-sm font-semibold ${
+          credits > 0
+            ? "bg-amber/10 text-amber"
+            : "bg-red-50 text-red-500"
+        }`}>
+          {credits > 0 ? `🐾 ${credits} left` : "0 left"}
+        </div>
+      )}
     </header>
   );
 }
