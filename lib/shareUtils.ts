@@ -34,7 +34,7 @@ export async function shareImage(
 
     await navigator.share({
       title: "PetSubtitles",
-      text: `"${caption}" — Translate YOUR pet's thoughts at petsubtitles.com`,
+      text: `Look what my pet is really thinking 😂\n\nhttps://petsubtitles.com`,
       files: [file],
     });
     return true;
@@ -62,4 +62,35 @@ export async function copyLinkToClipboard(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// --- Platform-specific sharing ---
+
+/** Open Instagram with web fallback */
+export function openInstagram(): void {
+  window.location.href = "instagram://camera";
+  setTimeout(() => {
+    window.open("https://www.instagram.com/", "_blank");
+  }, 1500);
+}
+
+/** Open TikTok with web fallback */
+export function openTikTok(): void {
+  window.location.href = "tiktok://";
+  setTimeout(() => {
+    window.open("https://www.tiktok.com/", "_blank");
+  }, 1500);
+}
+
+/** Open X/Twitter tweet compose with pre-filled text */
+export function shareToX(caption: string): void {
+  const text = `"${caption}" 😂\n\nTranslate your pet's thoughts at petsubtitles.com`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank");
+}
+
+/** Open Facebook sharer */
+export function shareToFacebook(): void {
+  const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://petsubtitles.com")}`;
+  window.open(url, "_blank");
 }

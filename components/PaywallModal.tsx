@@ -3,20 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { saveWaitlistEmail, getWaitlistEmail, getShareCreditsRemaining } from "@/lib/usageTracker";
 import { canUseWebShare, shareImage } from "@/lib/shareUtils";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   reason: "no_credits" | "premium_voice";
+  premiumVoiceName?: string;
   lastResultImage?: string;
   lastCaption?: string;
   onShareToUnlock?: () => void;
 }
 
+const VOICE_LABELS: Record<string, string> = {
+  dramatic: "Narrator",
+  genz: "Gen-Z",
+  shakespeare: "Shakespeare",
+  passive: "Passive Agg",
+  therapist: "Therapist",
+  telenovela: "Telenovela",
+};
+
 export default function PaywallModal({
   isOpen,
   onClose,
   reason,
+  premiumVoiceName,
   lastResultImage,
   lastCaption,
   onShareToUnlock,
@@ -29,7 +41,10 @@ export default function PaywallModal({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const shareCreditsLeft = getShareCreditsRemaining();
-  const canShareToUnlock = shareCreditsLeft > 0 && lastResultImage && canUseWebShare();
+  const canShareToUnlock = shareCreditsLeft > 0 && (lastResultImage ? canUseWebShare() : true);
+
+  const isPremiumReason = reason === "premium_voice";
+  const voiceLabel = premiumVoiceName ? VOICE_LABELS[premiumVoiceName] || premiumVoiceName : null;
 
   useEffect(() => {
     const existing = getWaitlistEmail();
@@ -58,18 +73,23 @@ export default function PaywallModal({
   if (!isOpen) return null;
 
   const handleShareToUnlock = async () => {
-    if (!lastResultImage || !lastCaption) return;
-    setSharing(true);
-    try {
-      const shared = await shareImage(lastResultImage, lastCaption);
-      if (shared && onShareToUnlock) {
-        onShareToUnlock();
-        onClose();
+    if (lastResultImage && lastCaption) {
+      setSharing(true);
+      try {
+        const shared = await shareImage(lastResultImage, lastCaption);
+        if (shared && onShareToUnlock) {
+          onShareToUnlock();
+          onClose();
+        }
+      } catch {
+        // Share cancelled or failed
+      } finally {
+        setSharing(false);
       }
-    } catch {
-      // Share cancelled or failed
-    } finally {
-      setSharing(false);
+    } else if (onShareToUnlock) {
+      // No image to share yet — just grant credit for premium upsell
+      onShareToUnlock();
+      onClose();
     }
   };
 
@@ -77,6 +97,7 @@ export default function PaywallModal({
     e.preventDefault();
     if (email.trim()) {
       saveWaitlistEmail(email.trim());
+      trackEvent("paywall_email_submitted");
       setSubmitted(true);
       setExistingEmail(email.trim());
     }
@@ -91,7 +112,7 @@ export default function PaywallModal({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Get more translations"
+      aria-label={isPremiumReason ? "Unlock premium voices" : "Daily limit reached"}
     >
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-bounce-in">
         {/* Close button */}
@@ -109,17 +130,29 @@ export default function PaywallModal({
 
         {/* Header */}
         <div className="text-center">
-          <div className="mb-3 text-4xl">🐾</div>
+          <div className="mb-3 text-4xl">{isPremiumReason ? "✨" : "🐾"}</div>
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-charcoal">
-            You&apos;re out of translations!
+            {isPremiumReason ? "Unlock Premium Voices" : "Daily Limit Reached"}
           </h2>
+          {isPremiumReason && voiceLabel && (
+            <p className="mt-1 text-sm text-charcoal-light">
+              The <strong>{voiceLabel}</strong> voice is a premium feature
+            </p>
+          )}
+          {!isPremiumReason && (
+            <p className="mt-1 text-sm text-charcoal-light">
+              Your free translations reset tomorrow
+            </p>
+          )}
         </div>
 
         {/* Share to unlock option */}
         {canShareToUnlock && (
           <div className="mt-5">
             <p className="mb-3 text-center text-sm text-charcoal-light">
-              Share a result to earn 1 more translation
+              {isPremiumReason
+                ? "Share a result to earn 1 premium voice credit"
+                : "Share a result to earn 1 more translation"}
               <span className="block text-xs text-charcoal/40 mt-1">
                 ({shareCreditsLeft} share credit{shareCreditsLeft !== 1 ? "s" : ""} left today)
               </span>
@@ -129,7 +162,7 @@ export default function PaywallModal({
               disabled={sharing}
               className="btn-press w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px] disabled:opacity-50"
             >
-              {sharing ? "Opening share..." : "Share & Unlock 1 More"}
+              {sharing ? "Opening share..." : isPremiumReason ? "Share & Unlock Voice" : "Share & Unlock 1 More"}
             </button>
           </div>
         )}
@@ -148,7 +181,9 @@ export default function PaywallModal({
           <p className="mb-3 text-center text-sm text-charcoal-light">
             {canShareToUnlock
               ? "Go unlimited — no sharing required"
-              : "Come back tomorrow for 3 more free shares, or go unlimited"}
+              : isPremiumReason
+              ? "Share results to earn premium credits, or go unlimited"
+              : "Come back tomorrow for 10 more free translations, or go unlimited"}
           </p>
 
           {submitted ? (

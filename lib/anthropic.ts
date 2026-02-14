@@ -55,10 +55,46 @@ const VOICE_MODIFIERS: Record<VoiceStyle, string> = {
     "Maximum drama. The pet is living in a telenovela. Every moment is life or death, betrayal, forbidden love, dramatic gasps. Over-the-top passionate. Someone has been DECEIVED. Hearts are BROKEN. The treat bag is EMPTY.",
 };
 
+/** Quick check: does this image contain a pet/animal? */
+export async function detectPet(
+  base64: string,
+  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+): Promise<boolean> {
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 8,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data: base64,
+            },
+          },
+          {
+            type: "text",
+            text: "Does this image contain a pet or animal? Reply with only YES or NO.",
+          },
+        ],
+      },
+    ],
+  });
+
+  const textBlock = response.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") return true; // fail-open
+  return textBlock.text.trim().toUpperCase().startsWith("YES");
+}
+
 export async function translatePetPhoto(
   base64: string,
   mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-  voiceStyle: VoiceStyle = "funny"
+  voiceStyle: VoiceStyle = "funny",
+  petName?: string,
+  pronouns?: string
 ): Promise<string> {
   const voiceModifier = VOICE_MODIFIERS[voiceStyle];
   const systemPrompt = voiceModifier
@@ -83,7 +119,9 @@ export async function translatePetPhoto(
           },
           {
             type: "text",
-            text: "What is this pet thinking? Translate their thoughts.",
+            text: `What is this pet thinking? Translate their thoughts.${
+              petName ? ` The pet's name is ${petName}.` : ""
+            }${pronouns ? ` Use ${pronouns} pronouns.` : ""}`,
           },
         ],
       },

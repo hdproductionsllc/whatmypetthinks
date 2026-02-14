@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 const SAMPLE_CAPTIONS = [
   "I have been a good boy for 47 seconds. Where is my treat.",
@@ -11,6 +11,10 @@ const SAMPLE_CAPTIONS = [
   "You've been gone for 11 minutes. I assumed you were dead.",
 ];
 
+export interface PhotoCaptureHandle {
+  openFilePicker: () => void;
+}
+
 interface Props {
   onImageSelected: (file: File) => void;
   previewUrl: string | null;
@@ -18,15 +22,17 @@ interface Props {
   isConverting: boolean;
 }
 
-export default function PhotoCapture({
-  onImageSelected,
-  previewUrl,
-  onClear,
-  isConverting,
-}: Props) {
+const PhotoCapture = forwardRef<PhotoCaptureHandle, Props>(function PhotoCapture(
+  { onImageSelected, previewUrl, onClear, isConverting },
+  ref
+) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [sampleIndex, setSampleIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: () => inputRef.current?.click(),
+  }));
 
   // Rotate sample captions
   useEffect(() => {
@@ -57,38 +63,66 @@ export default function PhotoCapture({
 
   if (isConverting) {
     return (
-      <div className="mx-4 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-amber/40 bg-amber/5 p-12">
-        <div className="flex gap-1.5">
-          <span className="paw-dot" />
-          <span className="paw-dot" />
-          <span className="paw-dot" />
+      <>
+        <div className="mx-4 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-amber/40 bg-amber/5 p-12">
+          <div className="flex gap-1.5">
+            <span className="paw-dot" />
+            <span className="paw-dot" />
+            <span className="paw-dot" />
+          </div>
+          <p className="mt-3 text-sm font-semibold text-amber-dark">
+            Converting iPhone photo...
+          </p>
         </div>
-        <p className="mt-3 text-sm font-semibold text-amber-dark">
-          Converting iPhone photo...
-        </p>
-      </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+            e.target.value = "";
+          }}
+          className="hidden"
+          aria-hidden="true"
+        />
+      </>
     );
   }
 
   if (previewUrl) {
     return (
-      <div className="relative mx-4">
-        <img
-          src={previewUrl}
-          alt="Selected pet photo"
-          className="w-full rounded-3xl shadow-lg"
-          style={{ maxHeight: "60vh", objectFit: "contain" }}
+      <>
+        <div className="relative mx-4">
+          <img
+            src={previewUrl}
+            alt="Selected pet photo"
+            className="w-full rounded-3xl shadow-lg"
+            style={{ maxHeight: "60vh", objectFit: "contain" }}
+          />
+          <button
+            onClick={onClear}
+            className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition hover:bg-black/70"
+            aria-label="Remove photo"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+            e.target.value = "";
+          }}
+          className="hidden"
+          aria-hidden="true"
         />
-        <button
-          onClick={onClear}
-          className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition hover:bg-black/70"
-          aria-label="Remove photo"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+      </>
     );
   }
 
@@ -158,4 +192,6 @@ export default function PhotoCapture({
       />
     </div>
   );
-}
+});
+
+export default PhotoCapture;

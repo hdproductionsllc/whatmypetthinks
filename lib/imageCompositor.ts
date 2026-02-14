@@ -1,9 +1,12 @@
 "use client";
 
+import QRCode from "qrcode";
+
 const BRAND_NAME = "PetSubtitles";
 const BRAND_URL = "petsubtitles.com";
-const AMBER = "#F59E0B";
-const FOOTER_HEIGHT = 50;
+const BRAND_FULL_URL = "https://petsubtitles.com";
+const CORAL = "#FF6B4A";
+const FOOTER_HEIGHT = 44;
 
 interface CompositeResult {
   standardDataUrl: string;
@@ -101,36 +104,46 @@ function fitText(
   return { lines: wrapText(ctx, text, maxWidth), fontSize: minSize };
 }
 
-/** Draw the standard format: original image + subtitle bar + branded footer */
+/** Draw the standard format: original image + subtitle bar + branded footer.
+ *
+ * Layout (top to bottom):
+ * 1. Full pet photo at original aspect ratio
+ * 2. Semi-transparent gradient overlay on bottom ~25% of photo (subtitle zone)
+ * 3. White bold caption text rendered inside the gradient zone
+ * 4. Coral footer bar APPENDED BELOW the photo (extra canvas height)
+ */
 function drawStandard(
   img: HTMLImageElement,
   caption: string
 ): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   const w = img.naturalWidth;
-  const totalH = img.naturalHeight + FOOTER_HEIGHT;
+  const h = img.naturalHeight;
+  const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
+
+  // Footer bar sits BELOW the photo — adds to total canvas height
+  const footerH = Math.max(FOOTER_HEIGHT, Math.round(w * 0.06));
   canvas.width = w;
-  canvas.height = totalH;
+  canvas.height = h + footerH;
 
   const ctx = canvas.getContext("2d")!;
 
-  // Draw original image
+  // 1. Draw the full photo
   ctx.drawImage(img, 0, 0);
 
-  // Subtitle gradient bar (bottom 20% of image)
-  const barHeight = img.naturalHeight * 0.2;
-  const barY = img.naturalHeight - barHeight;
-  const gradient = ctx.createLinearGradient(0, barY, 0, img.naturalHeight);
+  // 2. Gradient overlay on the bottom 30% of the photo
+  const gradientHeight = h * 0.30;
+  const gradientY = h - gradientHeight;
+  const gradient = ctx.createLinearGradient(0, gradientY, 0, h);
   gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
-  gradient.addColorStop(0.4, "rgba(0, 0, 0, 0.5)");
-  gradient.addColorStop(1, "rgba(0, 0, 0, 0.7)");
+  gradient.addColorStop(0.35, "rgba(0, 0, 0, 0.4)");
+  gradient.addColorStop(1, "rgba(0, 0, 0, 0.75)");
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, barY, w, barHeight);
+  ctx.fillRect(0, gradientY, w, gradientHeight);
 
-  // Caption text
+  // 3. Caption text — positioned within the gradient zone with padding
   const padding = w * 0.06;
   const maxTextWidth = w - padding * 2;
-  const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
   const { lines, fontSize } = fitText(
     ctx,
     caption,
@@ -143,7 +156,9 @@ function drawStandard(
 
   const lineHeight = fontSize * 1.3;
   const textBlockHeight = lines.length * lineHeight;
-  const textStartY = img.naturalHeight - (barHeight * 0.4 + textBlockHeight) / 2;
+  // Bottom of text block sits 15% up from photo bottom (well above footer)
+  const bottomPadding = h * 0.04;
+  const textStartY = h - bottomPadding - textBlockHeight + lineHeight * 0.3;
 
   ctx.textAlign = "center";
   ctx.fillStyle = "white";
@@ -163,31 +178,44 @@ function drawStandard(
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
 
-  // Branded footer
-  ctx.fillStyle = AMBER;
-  ctx.fillRect(0, img.naturalHeight, w, FOOTER_HEIGHT);
+  // 4. Branded footer — coral bar BELOW the photo
+  ctx.fillStyle = CORAL;
+  ctx.fillRect(0, h, w, footerH);
 
-  const footerY = img.naturalHeight + FOOTER_HEIGHT * 0.65;
+  const brandFontSize = Math.max(16, Math.round(w * 0.026));
+  const ctaFontSize = Math.max(14, Math.round(w * 0.022));
+  const footerCenterY = h + footerH * 0.62;
   ctx.fillStyle = "white";
 
-  // Left: brand name with paw emoji
+  // Left: paw + petsubtitles.com
   ctx.textAlign = "left";
-  ctx.font = `bold 16px ${fontFamily}`;
-  ctx.fillText(`🐾 ${BRAND_NAME}`, padding, footerY);
+  ctx.font = `bold ${brandFontSize}px ${fontFamily}`;
+  ctx.fillText(`🐾 ${BRAND_URL}`, padding, footerCenterY);
 
-  // Right: URL
+  // Right: CTA
   ctx.textAlign = "right";
-  ctx.font = `14px ${fontFamily}`;
-  ctx.fillText(BRAND_URL, w - padding, footerY);
+  ctx.font = `${ctaFontSize}px ${fontFamily}`;
+  ctx.fillText("Try it free \u2192", w - padding, footerCenterY);
 
   return canvas;
 }
 
-/** Draw story format: 1080x1920 with gradient bg, centered photo, caption, CTA */
-function drawStory(
+/** Generate a QR code as an Image element */
+async function generateQRImage(url: string, size: number): Promise<HTMLImageElement> {
+  const dataUrl = await QRCode.toDataURL(url, {
+    width: size,
+    margin: 1,
+    color: { dark: "#FFFFFF", light: "#00000000" },
+    errorCorrectionLevel: "M",
+  });
+  return loadImage(dataUrl);
+}
+
+/** Draw story format: 1080x1920 with gradient bg, centered photo, caption, CTA + QR */
+async function drawStory(
   img: HTMLImageElement,
   caption: string
-): HTMLCanvasElement {
+): Promise<HTMLCanvasElement> {
   const W = 1080;
   const H = 1920;
   const canvas = document.createElement("canvas");
@@ -195,10 +223,10 @@ function drawStory(
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Amber → orange gradient background
+  // Coral gradient background
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, AMBER);
-  bgGrad.addColorStop(1, "#EA580C");
+  bgGrad.addColorStop(0, CORAL);
+  bgGrad.addColorStop(1, "#E0452A");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
@@ -268,21 +296,203 @@ function drawStory(
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
 
-  // CTA banner at bottom
-  const ctaH = 180;
+  // CTA banner at bottom with QR code
+  const ctaH = 200;
   const ctaY = H - ctaH;
-  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
   ctx.fillRect(0, ctaY, W, ctaH);
+
+  // QR code on the right
+  const qrSize = 120;
+  try {
+    const qrImg = await generateQRImage(BRAND_FULL_URL, qrSize);
+    const qrX = W - qrSize - 40;
+    const qrY = ctaY + (ctaH - qrSize) / 2;
+
+    // QR background circle for contrast
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.beginPath();
+    ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 16);
+    ctx.fill();
+
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  } catch {
+    // QR generation failed — skip it, URL is still visible
+  }
+
+  // CTA text — left-aligned to balance with QR on the right
+  const textAreaW = W - qrSize - 120;
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.font = `bold 30px ${fontFamily}`;
+  ctx.fillText("What your pet is really thinking \uD83D\uDC3E", textAreaW / 2 + 40, ctaY + 65);
+
+  ctx.font = `bold 26px ${fontFamily}`;
+  ctx.globalAlpha = 0.9;
+  ctx.fillText(`TRY IT ON YOUR PET \u2192 ${BRAND_URL}`, textAreaW / 2 + 40, ctaY + 115);
+  ctx.globalAlpha = 1;
+
+  // Small "Scan to try" label under QR
+  ctx.font = `14px ${fontFamily}`;
+  ctx.globalAlpha = 0.7;
+  ctx.textAlign = "center";
+  ctx.fillText("Scan to try", W - qrSize / 2 - 40, ctaY + (ctaH + qrSize) / 2 + 20);
+  ctx.globalAlpha = 1;
+
+  return canvas;
+}
+
+/** Voice label map for battle mode */
+const VOICE_LABELS: Record<string, { label: string; emoji: string }> = {
+  funny: { label: "Funny", emoji: "😂" },
+  dramatic: { label: "Narrator", emoji: "🎬" },
+  genz: { label: "Gen-Z", emoji: "💀" },
+  shakespeare: { label: "Shakespeare", emoji: "🎭" },
+  passive: { label: "Passive Agg", emoji: "😒" },
+  therapist: { label: "Therapist", emoji: "🧠" },
+  telenovela: { label: "Telenovela", emoji: "🌹" },
+};
+
+export interface BattleEntry {
+  voiceId: string;
+  caption: string;
+}
+
+/** Draw caption battle: pet photo with 3 voice captions side by side */
+async function drawBattle(
+  img: HTMLImageElement,
+  entries: BattleEntry[]
+): Promise<HTMLCanvasElement> {
+  const W = 1080;
+  const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
+  const displayFont = '"Fredoka", "Nunito", sans-serif';
+
+  // Layout calculations
+  const headerH = 100;
+  const photoMaxH = 500;
+  const photoGap = 40;
+  const cardPadding = 30;
+  const cardGap = 20;
+  const footerH = 80;
+
+  // Calculate photo dimensions
+  const photoMaxW = W - 80;
+  let photoW = img.naturalWidth;
+  let photoH = img.naturalHeight;
+  const photoScale = Math.min(photoMaxW / photoW, photoMaxH / photoH);
+  photoW = Math.round(photoW * photoScale);
+  photoH = Math.round(photoH * photoScale);
+
+  // Calculate caption card heights — need a temporary canvas to measure text
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = W;
+  tempCanvas.height = 100;
+  const tempCtx = tempCanvas.getContext("2d")!;
+  const captionMaxW = W - cardPadding * 4;
+
+  const cardData: { entry: BattleEntry; lines: string[]; fontSize: number; cardH: number }[] = [];
+
+  for (const entry of entries) {
+    const { lines, fontSize } = fitText(tempCtx, entry.caption, captionMaxW, 4, 24, 16, fontFamily);
+    const lineHeight = fontSize * 1.35;
+    const labelH = 36; // voice label row
+    const textH = lines.length * lineHeight;
+    const cardH = labelH + textH + cardPadding * 1.5;
+    cardData.push({ entry, lines, fontSize, cardH });
+  }
+
+  const maxCardH = Math.max(...cardData.map(c => c.cardH));
+  const totalCardsH = cardData.length * (maxCardH + cardGap) - cardGap;
+
+  const H = headerH + photoH + photoGap + totalCardsH + photoGap + footerH;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+
+  // Background gradient — coral
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, CORAL);
+  bgGrad.addColorStop(1, "#E0452A");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+  ctx.font = `bold 42px ${displayFont}`;
+  ctx.fillText("\uD83D\uDC3E Caption Battle", W / 2, 65);
+
+  // Pet photo with rounded corners
+  const photoX = (W - photoW) / 2;
+  const photoY = headerH;
+
+  ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 6;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(photoX, photoY, photoW, photoH, 20);
+  ctx.clip();
+  ctx.drawImage(img, photoX, photoY, photoW, photoH);
+  ctx.restore();
+
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Caption cards
+  let cardY = photoY + photoH + photoGap;
+  const cardX = 40;
+  const cardW = W - 80;
+
+  const voiceColors = ["#EF4444", "#3B82F6", "#10B981", "#8B5CF6", "#EC4899", "#F59E0B", "#14B8A6"];
+
+  for (let i = 0; i < cardData.length; i++) {
+    const { entry, lines, fontSize } = cardData[i];
+    const voice = VOICE_LABELS[entry.voiceId] || { label: entry.voiceId, emoji: "🎤" };
+    const accentColor = voiceColors[i % voiceColors.length];
+
+    // Card background
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, maxCardH, 16);
+    ctx.fill();
+
+    // Accent bar on left
+    ctx.fillStyle = accentColor;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, 6, maxCardH, [16, 0, 0, 16]);
+    ctx.fill();
+
+    // Voice label
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.textAlign = "left";
+    ctx.font = `bold 20px ${fontFamily}`;
+    ctx.fillText(`${voice.emoji} ${voice.label}`, cardX + cardPadding, cardY + 28);
+
+    // Caption text
+    ctx.fillStyle = "white";
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    const lineHeight = fontSize * 1.35;
+    for (let j = 0; j < lines.length; j++) {
+      ctx.fillText(lines[j], cardX + cardPadding, cardY + 36 + 20 + j * lineHeight);
+    }
+
+    cardY += maxCardH + cardGap;
+  }
+
+  // Footer — coral bar
+  const footerY = H - footerH;
+  ctx.fillStyle = CORAL;
+  ctx.fillRect(0, footerY, W, footerH);
 
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
-  ctx.font = `bold 28px ${fontFamily}`;
-  ctx.fillText("Translate YOUR pet's thoughts", W / 2, ctaY + 60);
-
-  ctx.font = `24px ${fontFamily}`;
-  ctx.globalAlpha = 0.8;
-  ctx.fillText(BRAND_URL, W / 2, ctaY + 110);
-  ctx.globalAlpha = 1;
+  ctx.font = `bold 24px ${fontFamily}`;
+  ctx.fillText(`\uD83D\uDC3E ${BRAND_URL}  \u00B7  Try it free \u2192`, W / 2, footerY + footerH * 0.6);
 
   return canvas;
 }
@@ -296,10 +506,21 @@ export async function compositeSubtitles(
   const img = await loadImage(originalDataUrl);
 
   const standardCanvas = drawStandard(img, caption);
-  const storyCanvas = drawStory(img, caption);
+  const storyCanvas = await drawStory(img, caption);
 
   return {
     standardDataUrl: standardCanvas.toDataURL("image/png"),
     storyDataUrl: storyCanvas.toDataURL("image/jpeg", 0.92),
   };
+}
+
+/** Composite a caption battle image showing multiple voice results */
+export async function compositeBattle(
+  originalDataUrl: string,
+  entries: BattleEntry[]
+): Promise<string> {
+  await ensureFontsReady();
+  const img = await loadImage(originalDataUrl);
+  const battleCanvas = await drawBattle(img, entries);
+  return battleCanvas.toDataURL("image/jpeg", 0.92);
 }

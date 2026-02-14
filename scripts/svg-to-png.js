@@ -27,11 +27,14 @@ async function main() {
   await sharp(ogSvg).resize(1200, 630).png().toFile(path.join(publicDir, "og-image.png"));
   console.log("✓ public/og-image.png");
 
-  // Sample images
+  // Sample images (skip if SVGs don't exist — replaced by JPGs)
   for (let i = 1; i <= 3; i++) {
-    const svgBuf = fs.readFileSync(path.join(publicDir, "samples", `sample-${i}.svg`));
-    await sharp(svgBuf).resize(400, 500).png().toFile(path.join(publicDir, "samples", `sample-${i}.png`));
-    console.log(`✓ public/samples/sample-${i}.png`);
+    const svgPath = path.join(publicDir, "samples", `sample-${i}.svg`);
+    if (fs.existsSync(svgPath)) {
+      const svgBuf = fs.readFileSync(svgPath);
+      await sharp(svgBuf).resize(400, 500).png().toFile(path.join(publicDir, "samples", `sample-${i}.png`));
+      console.log(`✓ public/samples/sample-${i}.png`);
+    }
   }
 
   console.log("\nAll PNGs generated!");

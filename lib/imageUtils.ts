@@ -1,6 +1,7 @@
 "use client";
 
-const MAX_DIMENSION = 1024;
+/** Max dimension for the API call (keeps costs + latency low) */
+const API_MAX_DIMENSION = 1024;
 const JPEG_QUALITY = 0.8;
 
 export function isHeicFile(file: File): boolean {
@@ -33,44 +34,74 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function resizeAndConvertToBase64(
-  blob: Blob
-): Promise<{ base64: string; dataUrl: string; mediaType: string }> {
-  const url = URL.createObjectURL(blob);
-  try {
-    const img = await loadImage(url);
-
-    const canvas = document.createElement("canvas");
-    let { width, height } = img;
-
-    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      const scale = MAX_DIMENSION / Math.max(width, height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-    }
-
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, width, height);
-
-    const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-    const base64 = dataUrl.split(",")[1];
-
-    return { base64, dataUrl, mediaType: "image/jpeg" };
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
+/**
+ * Process an image file and return TWO versions:
+ * - `base64` + `dataUrl` (small): resized to max 1024px for the API call
+ * - `originalDataUrl` (full resolution): for canvas compositing output
+ */
 export async function processImageFile(
   file: File
-): Promise<{ base64: string; dataUrl: string; mediaType: string }> {
+): Promise<{
+  base64: string;
+  dataUrl: string;
+  mediaType: string;
+  originalDataUrl: string;
+}> {
   let blob: Blob = file;
 
   if (isHeicFile(file)) {
     blob = await convertHeicToJpeg(file);
   }
 
-  return resizeAndConvertToBase64(blob);
+  const fullUrl = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(fullUrl);
+    const origW = img.naturalWidth;
+    const origH = img.naturalHeight;
+
+    // --- Full-resolution data URL (for compositing) ---
+    // Just read the original image as-is. For very large images (>4000px),
+    // cap at 2048px to avoid canvas memory issues on mobile.
+    const compositeMax = 2048;
+    let compW = origW;
+    let compH = origH;
+    if (compW > compositeMax || compH > compositeMax) {
+      const s = compositeMax / Math.max(compW, compH);
+      compW = Math.round(compW * s);
+      compH = Math.round(compH * s);
+    }
+
+    const compCanvas = document.createElement("canvas");
+    compCanvas.width = compW;
+    compCanvas.height = compH;
+    const compCtx = compCanvas.getContext("2d")!;
+    compCtx.drawImage(img, 0, 0, compW, compH);
+    const originalDataUrl = compCanvas.toDataURL("image/jpeg", 0.92);
+
+    // --- Small version for the API call ---
+    let apiW = origW;
+    let apiH = origH;
+    if (apiW > API_MAX_DIMENSION || apiH > API_MAX_DIMENSION) {
+      const scale = API_MAX_DIMENSION / Math.max(apiW, apiH);
+      apiW = Math.round(apiW * scale);
+      apiH = Math.round(apiH * scale);
+    }
+
+    const apiCanvas = document.createElement("canvas");
+    apiCanvas.width = apiW;
+    apiCanvas.height = apiH;
+    const apiCtx = apiCanvas.getContext("2d")!;
+    apiCtx.drawImage(img, 0, 0, apiW, apiH);
+    const apiDataUrl = apiCanvas.toDataURL("image/jpeg", JPEG_QUALITY);
+    const base64 = apiDataUrl.split(",")[1];
+
+    return {
+      base64,
+      dataUrl: apiDataUrl,
+      mediaType: "image/jpeg",
+      originalDataUrl,
+    };
+  } finally {
+    URL.revokeObjectURL(fullUrl);
+  }
 }

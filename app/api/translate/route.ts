@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { imageBase64, mediaType, voiceStyle = "funny" } = body;
+    const { imageBase64, mediaType, voiceStyle = "funny", petName, pronouns } = body;
 
     if (!imageBase64 || !mediaType) {
       return NextResponse.json(
@@ -92,10 +92,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate optional personalization
+    const cleanName = typeof petName === "string" ? petName.slice(0, 20).trim() : undefined;
+    const validPronouns = ["he/him", "she/her", "they/them"];
+    const cleanPronouns = validPronouns.includes(pronouns) ? pronouns : undefined;
+
     const caption = await translatePetPhoto(
       imageBase64,
       mediaType as MediaType,
-      voiceStyle as VoiceStyle
+      voiceStyle as VoiceStyle,
+      cleanName || undefined,
+      cleanPronouns
     );
 
     if (caption === "NO_PET_DETECTED") {

@@ -1,16 +1,21 @@
 "use client";
 
-const INITIAL_FREE_CREDITS = 5;
+const FREE_USES_PER_DAY = 10;
 const MAX_SHARE_CREDITS_PER_DAY = 3;
 
+// Premium voices — everything except "funny"
+const PREMIUM_VOICES = new Set(["dramatic", "genz", "shakespeare", "passive", "therapist", "telenovela"]);
+
 // Storage keys
-const CREDITS_USED_KEY = "petsubtitles_credits_used";
-const SHARE_CREDITS_KEY = "petsubtitles_share_credits_total";
 const WAITLIST_KEY = "petsubtitles_waitlist_email";
 
-function sharesTodayKey(): string {
+function todayKey(): string {
   const d = new Date();
-  return `petsubtitles_shares_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function storageKey(prefix: string): string {
+  return `petsubtitles_${prefix}_${todayKey()}`;
 }
 
 function getNum(key: string): number {
@@ -24,26 +29,55 @@ function setNum(key: string, val: number): void {
   localStorage.setItem(key, String(val));
 }
 
-/** Total credits available right now */
-export function getAvailableCredits(): number {
-  const used = getNum(CREDITS_USED_KEY);
-  const shareCredits = getNum(SHARE_CREDITS_KEY);
-  return Math.max(0, INITIAL_FREE_CREDITS + shareCredits - used);
+// --- Free tier (Funny voice) ---
+
+/** How many free uses remain today */
+export function getFreeUsesRemaining(): number {
+  return Math.max(0, FREE_USES_PER_DAY - getNum(storageKey("free_used")));
 }
 
-/** Whether the user can translate right now */
-export function hasCredits(): boolean {
-  return getAvailableCredits() > 0;
+/** Whether the user has free credits for the Funny voice */
+export function hasFreeCredits(): boolean {
+  return getFreeUsesRemaining() > 0;
 }
 
-/** Use one credit (call after successful translation) */
-export function useCredit(): void {
-  setNum(CREDITS_USED_KEY, getNum(CREDITS_USED_KEY) + 1);
+/** Consume one free credit */
+export function useFreeCredit(): void {
+  const key = storageKey("free_used");
+  setNum(key, getNum(key) + 1);
 }
+
+// --- Premium tier (all other voices) ---
+
+/** Whether a voice requires premium credits */
+export function isPremiumVoice(voiceId: string): boolean {
+  return PREMIUM_VOICES.has(voiceId);
+}
+
+/** Get current premium credits (earned via sharing) */
+export function getPremiumCredits(): number {
+  return getNum(storageKey("premium_credits"));
+}
+
+/** Whether the user has premium credits */
+export function hasPremiumCredits(): boolean {
+  return getPremiumCredits() > 0;
+}
+
+/** Consume one premium credit */
+export function usePremiumCredit(): void {
+  const key = storageKey("premium_credits");
+  const current = getNum(key);
+  if (current > 0) {
+    setNum(key, current - 1);
+  }
+}
+
+// --- Share-to-unlock ---
 
 /** How many share credits earned today */
-export function getShareCreditsToday(): number {
-  return getNum(sharesTodayKey());
+function getShareCreditsToday(): number {
+  return getNum(storageKey("shares"));
 }
 
 /** Whether the user can still earn credits by sharing today */
@@ -51,23 +85,43 @@ export function canEarnShareCredit(): boolean {
   return getShareCreditsToday() < MAX_SHARE_CREDITS_PER_DAY;
 }
 
-/** Earn a credit by sharing. Returns true if credit was earned, false if daily limit hit. */
-export function earnShareCredit(): boolean {
-  if (!canEarnShareCredit()) return false;
-  setNum(SHARE_CREDITS_KEY, getNum(SHARE_CREDITS_KEY) + 1);
-  setNum(sharesTodayKey(), getShareCreditsToday() + 1);
-  return true;
-}
-
 /** How many share credits remain earnable today */
 export function getShareCreditsRemaining(): number {
   return Math.max(0, MAX_SHARE_CREDITS_PER_DAY - getShareCreditsToday());
 }
 
-/** Premium voice check — all voices free for now */
-export function isPremiumVoice(voiceId: string): boolean {
-  return false;
+/** Earn a premium credit by sharing. Returns true if credit was earned. */
+export function earnShareCredit(): boolean {
+  if (!canEarnShareCredit()) return false;
+  const sharesKey = storageKey("shares");
+  setNum(sharesKey, getShareCreditsToday() + 1);
+  const creditsKey = storageKey("premium_credits");
+  setNum(creditsKey, getNum(creditsKey) + 1);
+  return true;
 }
+
+// --- Backward-compatible wrappers ---
+
+/** Total credits available (free + premium). Used by Header badge. */
+export function getAvailableCredits(): number {
+  return getFreeUsesRemaining() + getPremiumCredits();
+}
+
+/** Whether the user can translate with any voice */
+export function hasCredits(): boolean {
+  return hasFreeCredits() || hasPremiumCredits();
+}
+
+/** Use one credit — prefers free, falls back to premium */
+export function useCredit(): void {
+  if (hasFreeCredits()) {
+    useFreeCredit();
+  } else {
+    usePremiumCredit();
+  }
+}
+
+// --- Waitlist ---
 
 export function saveWaitlistEmail(email: string): void {
   if (typeof window === "undefined") return;

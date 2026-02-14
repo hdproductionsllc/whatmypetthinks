@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -21,24 +23,38 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#F59E0B",
+  themeColor: "#FF6B4A",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://petsubtitles.com"),
-  title: "PetSubtitles — What Is Your Pet Really Thinking?",
+  title: "PetSubtitles — What Is Your Pet Really Thinking? | AI Pet Translator",
   description:
-    "Upload a photo of your pet and our AI will translate their inner monologue into hilarious movie-style subtitles. Share the laughs!",
+    "Upload a photo of your pet and AI translates their inner monologue into hilarious subtitles. 7 voice styles, shareable images, totally free. Try it now!",
+  keywords: [
+    "pet subtitles",
+    "what is my pet thinking",
+    "AI pet translator",
+    "funny pet captions",
+    "pet thought bubble",
+    "pet meme generator",
+    "dog thoughts",
+    "cat thoughts",
+    "pet caption generator",
+  ],
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "https://petsubtitles.com",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "PetSubtitles",
   },
   openGraph: {
-    title: "PetSubtitles — What Is Your Pet Really Thinking?",
+    title: "What Is Your Pet Really Thinking? | PetSubtitles",
     description:
-      "Upload a photo of your pet and AI translates their thoughts into movie-style subtitles.",
+      "AI translates your pet's thoughts into hilarious movie-style subtitles. 7 voice styles. Shareable images. Try it free.",
     url: "https://petsubtitles.com",
     siteName: "PetSubtitles",
     images: [
@@ -46,20 +62,31 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "PetSubtitles — AI-powered pet thought translation",
+        alt: "PetSubtitles — AI-powered pet thought translation with a happy dog",
       },
     ],
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PetSubtitles — What Is Your Pet Really Thinking?",
+    title: "What Is Your Pet Really Thinking? 🐾",
     description:
-      "Upload a photo of your pet and AI translates their thoughts into movie-style subtitles.",
+      "AI translates your pet's thoughts into hilarious subtitles. Upload a photo → get a shareable meme. Free.",
     images: ["/og-image.png"],
   },
   icons: {
     apple: "/icons/icon-192.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   formatDetection: {
     telephone: false,
@@ -73,8 +100,55 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* GA4 Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-LJJE0F7RH9" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-LJJE0F7RH9');`,
+          }}
+        />
+        {/* iOS splash screens */}
+        <link rel="apple-touch-startup-image" href="/splash/iphone-se.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-8.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-8-plus.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-x.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xr.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xsmax.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-12.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-12-max.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-promax.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-15-pro.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/ipad.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/splash/ipad-pro-11.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
+        <link rel="apple-touch-startup-image" href="/splash/ipad-pro-13.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
+      </head>
       <body className={`${fredoka.variable} ${nunito.variable}`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "PetSubtitles",
+              url: "https://petsubtitles.com",
+              description:
+                "Upload a photo of your pet and AI translates their inner monologue into hilarious movie-style subtitles.",
+              applicationCategory: "Entertainment",
+              operatingSystem: "Any",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+              },
+              image: "https://petsubtitles.com/og-image.png",
+            }),
+          }}
+        />
+        <ServiceWorkerRegistrar />
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );

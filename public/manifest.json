@@ -1,12 +1,13 @@
 {
-  "name": "PetSubtitles",
-  "short_name": "PetSubs",
+  "name": "PetSubtitles — What Is Your Pet Really Thinking?",
+  "short_name": "PetSubtitles",
   "description": "Translate your pet's thoughts with AI-powered subtitles",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFBF0",
-  "theme_color": "#F59E0B",
+  "theme_color": "#FF6B4A",
   "orientation": "portrait",
+  "categories": ["entertainment", "photo"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,6 +20,33 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/samples/cat-judging.jpg",
+      "sizes": "600x436",
+      "type": "image/jpeg",
+      "label": "A cat with AI-generated subtitles"
+    },
+    {
+      "src": "/samples/dog-guilty.jpg",
+      "sizes": "600x436",
+      "type": "image/jpeg",
+      "label": "A dog with AI-generated subtitles"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Translate a Photo",
+      "short_name": "Translate",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
