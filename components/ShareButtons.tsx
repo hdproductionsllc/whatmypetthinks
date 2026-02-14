@@ -55,11 +55,30 @@ export default function ShareButtons({
     if (shared && onShareComplete) onShareComplete();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     trackEvent("share_tapped", { platform: "save" });
-    downloadImage(standardImageUrl, generateFilename(voiceStyle));
-    showToast("Saved! 🐾");
-    if (onShareComplete) onShareComplete();
+    if (webShareAvailable) {
+      // On mobile, use share sheet — includes "Save Image" option for camera roll
+      try {
+        const res = await fetch(standardImageUrl);
+        const blob = await res.blob();
+        const file = new File([blob], generateFilename(voiceStyle), { type: "image/png" });
+        await navigator.share({ files: [file] });
+        showToast("Saved! 🐾");
+        if (onShareComplete) onShareComplete();
+      } catch (err) {
+        if (err instanceof Error && err.name !== "AbortError") {
+          // Fallback to download if share fails
+          downloadImage(standardImageUrl, generateFilename(voiceStyle));
+          showToast("Saved! 🐾");
+          if (onShareComplete) onShareComplete();
+        }
+      }
+    } else {
+      downloadImage(standardImageUrl, generateFilename(voiceStyle));
+      showToast("Saved! 🐾");
+      if (onShareComplete) onShareComplete();
+    }
   };
 
   const handleInstagram = () => {
