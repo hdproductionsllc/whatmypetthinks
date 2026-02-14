@@ -36,12 +36,12 @@ type MediaType = (typeof VALID_MEDIA_TYPES)[number];
 
 const VALID_VOICES: VoiceStyle[] = [
   "funny",
-  "sassy",
-  "philosophical",
   "dramatic",
-  "wholesome",
-  "unhinged",
-  "poetic",
+  "genz",
+  "shakespeare",
+  "passive",
+  "therapist",
+  "telenovela",
 ];
 
 // ~5MB in base64 is ~6.67MB string
@@ -97,6 +97,13 @@ export async function POST(request: NextRequest) {
       mediaType as MediaType,
       voiceStyle as VoiceStyle
     );
+
+    if (caption === "NO_PET_DETECTED") {
+      return NextResponse.json(
+        { error: "Hmm, we don't see a pet in this photo! Try again with your furry (or scaly) friend." },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({ caption });
   } catch (err) {

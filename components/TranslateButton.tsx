@@ -54,7 +54,7 @@ export default function TranslateButton({ onClick, isLoading, disabled }: Props)
               <span className="paw-dot" />
               <span className="paw-dot" />
             </div>
-            <span className="animate-fade-in text-sm font-normal opacity-90">
+            <span key={messageIndex} className="animate-fade-in text-sm font-normal opacity-90">
               {LOADING_MESSAGES[messageIndex]}
             </span>
           </div>

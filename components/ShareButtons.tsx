@@ -5,6 +5,7 @@ import {
   canUseWebShare,
   shareImage,
   downloadImage,
+  generateFilename,
   copyLinkToClipboard,
 } from "@/lib/shareUtils";
 
@@ -12,12 +13,14 @@ interface Props {
   standardImageUrl: string;
   storyImageUrl: string;
   caption: string;
+  voiceStyle?: string;
 }
 
 export default function ShareButtons({
   standardImageUrl,
   storyImageUrl,
   caption,
+  voiceStyle,
 }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const webShareAvailable = canUseWebShare();
@@ -27,75 +30,79 @@ export default function ShareButtons({
     setTimeout(() => setToast(null), 2500);
   };
 
-  const handleShare = async (dataUrl: string) => {
-    const shared = await shareImage(dataUrl, caption);
+  const handleShare = async (dataUrl: string, isStory: boolean) => {
+    const shared = await shareImage(dataUrl, caption, voiceStyle, isStory);
     if (!shared && !webShareAvailable) {
-      downloadImage(dataUrl);
+      downloadImage(dataUrl, generateFilename(voiceStyle, isStory));
       showToast("Photo saved!");
     }
   };
 
   const handleCopy = async () => {
     const copied = await copyLinkToClipboard();
-    showToast(copied ? "Link copied!" : "Could not copy link");
+    showToast(copied ? "Link copied! 🐾" : "Could not copy link");
   };
 
   return (
     <div className="px-4 py-3 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-      <div className="flex gap-3">
-        {/* Share / Download primary */}
+      {/* Big share CTA */}
+      <p className="mb-2 text-center text-sm font-bold text-charcoal">
+        Your friends need to see this 👇
+      </p>
+
+      {webShareAvailable ? (
+        <button
+          onClick={() => handleShare(standardImageUrl, false)}
+          className="btn-press mb-2 w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px]"
+        >
+          <span className="sm:hidden">Share</span>
+          <span className="hidden sm:inline">Share This Masterpiece</span>
+        </button>
+      ) : (
+        <button
+          onClick={() => downloadImage(standardImageUrl, generateFilename(voiceStyle))}
+          className="btn-press mb-2 w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px]"
+        >
+          Download Photo
+        </button>
+      )}
+
+      {/* Secondary actions row */}
+      <div className="flex gap-2">
         {webShareAvailable ? (
           <>
             <button
-              onClick={() => handleShare(standardImageUrl)}
-              className="btn-press flex-1 rounded-2xl bg-teal px-4 py-3 font-bold text-white shadow-md transition hover:bg-teal-dark"
+              onClick={() => handleShare(storyImageUrl, true)}
+              className="btn-press flex-1 rounded-xl bg-white px-3 py-3 text-sm font-semibold text-teal shadow-sm ring-1 ring-teal/20 transition hover:bg-teal/5 min-h-[44px]"
             >
-              Share
+              📱 Share to Story
             </button>
             <button
-              onClick={() => handleShare(storyImageUrl)}
-              className="btn-press flex-1 rounded-2xl bg-white px-4 py-3 font-bold text-teal shadow-md ring-1 ring-teal/20 transition hover:bg-teal/5"
+              onClick={() => {
+                downloadImage(standardImageUrl, generateFilename(voiceStyle));
+                showToast("Saved! 🐾");
+              }}
+              className="btn-press flex-1 rounded-xl bg-gray-100 px-3 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200 min-h-[44px]"
             >
-              Share to Story
+              Save Photo
             </button>
           </>
         ) : (
           <>
             <button
-              onClick={() => downloadImage(standardImageUrl)}
-              className="btn-press flex-1 rounded-2xl bg-teal px-4 py-3 font-bold text-white shadow-md transition hover:bg-teal-dark"
-            >
-              Download Photo
-            </button>
-            <button
-              onClick={() => downloadImage(storyImageUrl, "petsubtitles-story.jpg")}
-              className="btn-press flex-1 rounded-2xl bg-white px-4 py-3 font-bold text-teal shadow-md ring-1 ring-teal/20 transition hover:bg-teal/5"
+              onClick={() => downloadImage(storyImageUrl, generateFilename(voiceStyle, true))}
+              className="btn-press flex-1 rounded-xl bg-white px-3 py-3 text-sm font-semibold text-teal shadow-sm ring-1 ring-teal/20 transition hover:bg-teal/5 min-h-[44px]"
             >
               Download Story
             </button>
+            <button
+              onClick={handleCopy}
+              className="btn-press flex-1 rounded-xl bg-gray-100 px-3 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200 min-h-[44px]"
+            >
+              Copy Link
+            </button>
           </>
         )}
-      </div>
-
-      {/* Save & Copy row */}
-      <div className="mt-2 flex gap-3">
-        {webShareAvailable && (
-          <button
-            onClick={() => {
-              downloadImage(standardImageUrl);
-              showToast("Photo saved!");
-            }}
-            className="btn-press flex-1 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-charcoal transition hover:bg-gray-200"
-          >
-            Save Photo
-          </button>
-        )}
-        <button
-          onClick={handleCopy}
-          className="btn-press flex-1 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-charcoal transition hover:bg-gray-200"
-        >
-          Copy Link
-        </button>
       </div>
 
       {/* Toast */}

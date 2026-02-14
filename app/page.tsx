@@ -19,7 +19,6 @@ import {
   hasReachedLimit,
   incrementUsage,
   isPremiumVoice,
-  getRemainingTranslations,
 } from "@/lib/usageTracker";
 import type { VoiceStyle } from "@/lib/anthropic";
 
@@ -41,7 +40,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<"premium_voice" | "daily_limit">("premium_voice");
-  const [remaining, setRemaining] = useState(3);
   const [isOffline, setIsOffline] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
 
@@ -84,17 +82,18 @@ export default function Home() {
     setAppState("idle");
   }, []);
 
-  const handleTranslate = useCallback(async () => {
+  const doTranslate = useCallback(async (voice?: VoiceStyle) => {
     if (!imageData) return;
 
-    // Check freemium limits
+    const voiceToUse = voice ?? selectedVoice;
+
     if (hasReachedLimit()) {
       setPaywallReason("daily_limit");
       setPaywallOpen(true);
       return;
     }
 
-    if (isPremiumVoice(selectedVoice)) {
+    if (isPremiumVoice(voiceToUse)) {
       setPaywallReason("premium_voice");
       setPaywallOpen(true);
       return;
@@ -110,7 +109,7 @@ export default function Home() {
         body: JSON.stringify({
           imageBase64: imageData.base64,
           mediaType: imageData.mediaType,
-          voiceStyle: selectedVoice,
+          voiceStyle: voiceToUse,
         }),
       });
 
@@ -123,13 +122,17 @@ export default function Home() {
       setCaption(data.caption);
 
       // Composite the subtitles
-      const composited = await compositeSubtitles(imageData.dataUrl, data.caption);
+      let composited;
+      try {
+        composited = await compositeSubtitles(imageData.dataUrl, data.caption);
+      } catch {
+        throw new Error("Couldn't create the subtitle image. Try a different photo.");
+      }
       setStandardImage(composited.standardDataUrl);
       setStoryImage(composited.storyDataUrl);
 
       // Track usage
       incrementUsage();
-      setRemaining(getRemainingTranslations());
 
       // Save to history
       const thumbnail = await createThumbnail(composited.standardDataUrl);
@@ -152,6 +155,14 @@ export default function Home() {
     }
   }, [imageData, selectedVoice]);
 
+  const handleVoiceSelect = useCallback((voice: VoiceStyle) => {
+    setSelectedVoice(voice);
+    // If we're in result state, auto re-translate with the new voice
+    if (appState === "result" && imageData) {
+      doTranslate(voice);
+    }
+  }, [appState, imageData, doTranslate]);
+
   const handleRestore = useCallback((item: HistoryItem) => {
     setCaption(item.caption);
     setStandardImage(item.standardImageUrl);
@@ -172,32 +183,39 @@ export default function Home() {
         </div>
       )}
 
-      {/* Photo upload */}
-      <PhotoCapture
-        onImageSelected={handleImageSelected}
-        previewUrl={appState === "result" ? null : previewUrl}
-        onClear={handleClear}
-        isConverting={isConverting}
-      />
-
-      {/* Voice selector — show when photo selected or translating */}
-      {(appState === "photo_selected" || appState === "translating") && (
-        <VoiceSelector
-          selected={selectedVoice}
-          onSelect={setSelectedVoice}
-          onPremiumTap={() => {
-            setPaywallReason("premium_voice");
-            setPaywallOpen(true);
-          }}
+      {/* Photo upload — hide when showing result */}
+      {appState !== "result" && appState !== "translating" && (
+        <PhotoCapture
+          onImageSelected={handleImageSelected}
+          previewUrl={previewUrl}
+          onClear={handleClear}
+          isConverting={isConverting}
         />
       )}
 
-      {/* Translate button */}
-      {(appState === "photo_selected" || appState === "translating") && (
+      {/* Voice selector — show when photo selected, translating, OR in result state */}
+      {(appState === "photo_selected" || appState === "translating" || appState === "result") && (
+        <VoiceSelector
+          selected={selectedVoice}
+          onSelect={handleVoiceSelect}
+        />
+      )}
+
+      {/* Translate button — show when photo selected */}
+      {appState === "photo_selected" && (
         <TranslateButton
-          onClick={handleTranslate}
-          isLoading={appState === "translating"}
+          onClick={() => doTranslate()}
+          isLoading={false}
           disabled={!imageData || isOffline}
+        />
+      )}
+
+      {/* Loading state */}
+      {appState === "translating" && (
+        <TranslateButton
+          onClick={() => {}}
+          isLoading={true}
+          disabled={true}
         />
       )}
 
@@ -217,20 +235,27 @@ export default function Home() {
       {/* Result */}
       {appState === "result" && standardImage && (
         <>
-          <div className="mt-4">
+          <div className="mt-2">
             <ResultDisplay imageDataUrl={standardImage} caption={caption} />
           </div>
           <ShareButtons
             standardImageUrl={standardImage}
             storyImageUrl={storyImage}
             caption={caption}
+            voiceStyle={selectedVoice}
           />
-          <div className="px-4 py-2">
+          <div className="flex gap-2 px-4 py-1">
+            <button
+              onClick={() => doTranslate()}
+              className="btn-press flex-1 rounded-2xl bg-amber/10 py-3 text-sm font-bold text-amber transition hover:bg-amber/20"
+            >
+              🔄 Try Again
+            </button>
             <button
               onClick={handleClear}
-              className="btn-press w-full rounded-2xl bg-gray-100 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200"
+              className="btn-press flex-1 rounded-2xl bg-gray-100 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200"
             >
-              Translate Another Pet
+              📷 New Photo
             </button>
           </div>
         </>
@@ -245,7 +270,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="px-4 pb-6 pt-2 text-center text-xs text-charcoal-light/40">
+      <footer className="px-4 pb-6 pt-2 text-center text-xs text-charcoal/30">
         Made with 🐾 by PetSubtitles
       </footer>
 

@@ -14,19 +14,25 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error("Failed to load image for compositing"));
     img.src = src;
   });
 }
 
-/** Wait for Google Fonts to be available in canvas rendering */
+/** Wait for Google Fonts with a timeout fallback */
 async function ensureFontsReady(): Promise<void> {
-  if (typeof document !== "undefined" && document.fonts) {
-    await document.fonts.ready;
+  if (typeof document === "undefined" || !document.fonts) return;
+  try {
+    await Promise.race([
+      document.fonts.ready,
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
+  } catch {
+    // Proceed with system fonts
   }
 }
 
-/** Break text into lines that fit within maxWidth */
+/** Break text into lines that fit within maxWidth, with character-level fallback for long words */
 function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -34,19 +40,37 @@ function wrapText(
 ): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
-  let currentLine = words[0] || "";
+  let currentLine = "";
 
-  for (let i = 1; i < words.length; i++) {
-    const testLine = `${currentLine} ${words[i]}`;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+
+    // Handle words that are individually wider than maxWidth
+    if (ctx.measureText(word).width > maxWidth && currentLine === "") {
+      let remaining = word;
+      while (remaining.length > 0) {
+        let end = remaining.length;
+        while (end > 1 && ctx.measureText(remaining.slice(0, end)).width > maxWidth) {
+          end--;
+        }
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        currentLine = remaining.slice(0, end);
+        remaining = remaining.slice(end);
+      }
+      continue;
+    }
+
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
       lines.push(currentLine);
-      currentLine = words[i];
+      currentLine = word;
     } else {
       currentLine = testLine;
     }
   }
-  lines.push(currentLine);
+  if (currentLine) lines.push(currentLine);
   return lines;
 }
 
@@ -275,7 +299,7 @@ export async function compositeSubtitles(
   const storyCanvas = drawStory(img, caption);
 
   return {
-    standardDataUrl: standardCanvas.toDataURL("image/jpeg", 0.92),
+    standardDataUrl: standardCanvas.toDataURL("image/png"),
     storyDataUrl: storyCanvas.toDataURL("image/jpeg", 0.92),
   };
 }

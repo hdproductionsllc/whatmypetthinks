@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SAMPLE_CAPTIONS = [
-  "I have been a good boy for 47 seconds.",
-  "You call this dinner?",
-  "I am NOT hiding.",
+  "I have been a good boy for 47 seconds. Where is my treat.",
+  "They put me in this sweater and expect me to maintain my dignity.",
+  "The baby gets carried everywhere but when I jump on the counter suddenly it's a problem.",
+  "I don't know who told you I ate the couch cushion but they're lying.",
+  "This is my spot. I was here first. The fact that you bought the couch is irrelevant.",
+  "You've been gone for 11 minutes. I assumed you were dead.",
 ];
 
 interface Props {

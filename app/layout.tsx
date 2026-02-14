@@ -61,6 +61,9 @@ export const metadata: Metadata = {
   icons: {
     apple: "/icons/icon-192.png",
   },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({

@@ -77,7 +77,7 @@ export default function PaywallModal({ isOpen, onClose, reason }: Props) {
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-gray-400 hover:text-gray-600"
+            className="rounded-full p-2 text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
