@@ -19,11 +19,9 @@ import RecentHistory, {
 import { processImageFile } from "@/lib/imageUtils";
 import { compositeSubtitles, compositeBattle, type BattleEntry } from "@/lib/imageCompositor";
 import {
-  isPremiumVoice,
-  hasFreeCredits,
-  hasPremiumCredits,
-  useFreeCredit,
-  usePremiumCredit,
+  hasCredits,
+  getAvailableCredits,
+  useCredit,
   earnShareCredit,
 } from "@/lib/usageTracker";
 import { trackEvent } from "@/lib/analytics";
@@ -60,8 +58,6 @@ export default function Home() {
   const [storyImage, setStoryImage] = useState("");
   const [error, setError] = useState("");
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paywallReason, setPaywallReason] = useState<"no_credits" | "premium_voice">("no_credits");
-  const [paywallVoice, setPaywallVoice] = useState<string | undefined>();
   const [isOffline, setIsOffline] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   const [creditRefresh, setCreditRefresh] = useState(0);
@@ -176,20 +172,10 @@ export default function Home() {
     if (!imageData) return;
 
     const voiceToUse = voice ?? selectedVoice;
-    const premium = isPremiumVoice(voiceToUse);
 
-    // Check credits based on voice type
-    if (premium && !hasPremiumCredits()) {
-      trackEvent("paywall_shown", { reason: "premium_voice" });
-      setPaywallReason("premium_voice");
-      setPaywallVoice(voiceToUse);
-      setPaywallOpen(true);
-      return;
-    }
-    if (!premium && !hasFreeCredits()) {
+    // Check credits
+    if (!hasCredits()) {
       trackEvent("paywall_shown", { reason: "no_credits" });
-      setPaywallReason("no_credits");
-      setPaywallVoice(undefined);
       setPaywallOpen(true);
       return;
     }
@@ -234,12 +220,8 @@ export default function Home() {
       setStandardImage(composited.standardDataUrl);
       setStoryImage(composited.storyDataUrl);
 
-      // Use the appropriate credit
-      if (premium) {
-        usePremiumCredit();
-      } else {
-        useFreeCredit();
-      }
+      // Use one credit
+      useCredit();
       refreshCredits();
 
       // Save to history
@@ -269,11 +251,9 @@ export default function Home() {
   const doBattle = useCallback(async () => {
     if (!imageData) return;
 
-    // Battle is a premium feature — costs 1 premium credit
-    if (!hasPremiumCredits()) {
-      trackEvent("paywall_shown", { reason: "premium_voice" });
-      setPaywallReason("premium_voice");
-      setPaywallVoice(undefined);
+    // Battle costs 3 credits (one per voice)
+    if (getAvailableCredits() < 3) {
+      trackEvent("paywall_shown", { reason: "no_credits" });
       setPaywallOpen(true);
       return;
     }
@@ -315,8 +295,10 @@ export default function Home() {
       const battleDataUrl = await compositeBattle(imageData.originalDataUrl, results);
       setBattleImage(battleDataUrl);
 
-      // Use 1 premium credit
-      usePremiumCredit();
+      // Use 3 credits (one per voice)
+      useCredit();
+      useCredit();
+      useCredit();
       refreshCredits();
 
       setAppState("battle_result");
@@ -339,18 +321,11 @@ export default function Home() {
     }
   }, [appState, imageData, doTranslate]);
 
-  const handlePremiumTap = useCallback((voice: VoiceStyle) => {
-    trackEvent("premium_voice_tapped", { voice_style: voice });
-    setPaywallReason("premium_voice");
-    setPaywallVoice(voice);
-    setPaywallOpen(true);
-  }, []);
-
   const handleShareComplete = useCallback(() => {
     const earned = earnShareCredit();
     refreshCredits();
     if (earned) {
-      setShareToast("Earned 1 premium credit! ✨");
+      setShareToast("Earned 1 extra translation! 🐾");
       setTimeout(() => setShareToast(null), 3000);
     }
   }, [refreshCredits]);
@@ -359,7 +334,7 @@ export default function Home() {
     const earned = earnShareCredit();
     refreshCredits();
     if (earned) {
-      setShareToast("Premium credit earned! ✨");
+      setShareToast("Earned 1 extra translation! 🐾");
       setTimeout(() => setShareToast(null), 3000);
     }
   }, [refreshCredits]);
@@ -393,14 +368,14 @@ export default function Home() {
 
       {/* Offline banner */}
       {isOffline && (
-        <div className="mx-4 mb-2 rounded-xl bg-red-50 px-4 py-2 text-center text-sm font-semibold text-red-600">
+        <div className="mx-3 mb-1.5 rounded-xl bg-red-50 px-3 py-1.5 text-center text-sm font-semibold text-red-600">
           You&apos;re offline. Connect to the internet to translate.
         </div>
       )}
 
       {/* Share credit toast */}
       {shareToast && (
-        <div className="toast-enter mx-4 mb-2 flex justify-center">
+        <div className="toast-enter mx-3 mb-1.5 flex justify-center">
           <div className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white shadow-lg">
             {shareToast}
           </div>
@@ -451,8 +426,6 @@ export default function Home() {
         <VoiceSelector
           selected={selectedVoice}
           onSelect={handleVoiceSelect}
-          onPremiumTap={handlePremiumTap}
-          creditRefresh={creditRefresh}
         />
       )}
 
@@ -470,7 +443,7 @@ export default function Home() {
               disabled={!imageData || isOffline}
               className="btn-press w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 min-h-[48px]"
             >
-              Caption Battle — 3 Voices, 1 Photo {!hasPremiumCredits() && "✨"}
+              Caption Battle — 3 Voices, 1 Photo
             </button>
           </div>
         </>
@@ -527,13 +500,13 @@ export default function Home() {
       {/* Result */}
       {appState === "result" && standardImage && (
         <>
-          <div className="mt-2">
+          <div className="mt-1">
             <ResultDisplay imageDataUrl={standardImage} caption={caption} />
           </div>
 
           {/* Personalization nudge if no name was set */}
           {!petName && (
-            <div className="mx-4 mt-2 rounded-xl bg-amber/5 px-4 py-2 text-center">
+            <div className="mx-3 mt-1.5 rounded-xl bg-amber/5 px-3 py-1.5 text-center">
               <p className="text-xs text-charcoal-light">
                 Add your pet&apos;s name for personalized captions
               </p>
@@ -555,47 +528,21 @@ export default function Home() {
       {/* Battle result */}
       {appState === "battle_result" && battleImage && (
         <>
-          <div className="mt-2 px-4">
+          <div className="mt-1 px-2">
             <img
               src={battleImage}
               alt="Caption Battle results"
               className="w-full rounded-2xl shadow-lg animate-fade-up"
             />
           </div>
-          <div className="px-4 py-3">
-            <button
-              onClick={async () => {
-                trackEvent("share_tapped", { share_type: "battle" });
-                const { shareImage } = await import("@/lib/shareUtils");
-                const shared = await shareImage(
-                  battleImage,
-                  `Caption Battle! Which voice wins? 🐾 ${battleEntries.map(e => `"${e.caption}"`).join(" vs ")}`,
-                  "battle"
-                );
-                if (shared) {
-                  trackEvent("share_completed", { share_type: "battle" });
-                  handleShareComplete();
-                }
-              }}
-              className="btn-press w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg min-h-[48px]"
-            >
-              Share This Battle
-            </button>
-          </div>
-          <div className="flex gap-2 px-4 py-1">
-            <button
-              onClick={doBattle}
-              className="btn-press flex-1 rounded-2xl bg-purple-100 py-3 text-sm font-bold text-purple-600 transition hover:bg-purple-200 min-h-[44px]"
-            >
-              New Battle
-            </button>
-            <button
-              onClick={handleNewPhoto}
-              className="btn-press flex-1 rounded-2xl bg-gray-100 py-3 text-sm font-semibold text-charcoal transition hover:bg-gray-200 min-h-[44px]"
-            >
-              New Photo
-            </button>
-          </div>
+          <ShareButtons
+            standardImageUrl={battleImage}
+            storyImageUrl={battleImage}
+            caption={`Caption Battle! Which voice wins? 🐾\n${battleEntries.map(e => `"${e.caption}"`).join("\n")}`}
+            voiceStyle="battle"
+            onShareComplete={handleShareComplete}
+            onNewPhoto={handleNewPhoto}
+          />
         </>
       )}
 
@@ -612,7 +559,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="px-4 pb-6 pt-2 text-center text-xs text-charcoal/30">
+      <footer className="px-3 pb-4 pt-1.5 text-center text-xs text-charcoal/30">
         Made with 🐾 by PetSubtitles
         <span className="mx-1">·</span>
         <a href="/privacy" className="underline hover:text-charcoal/50">Privacy</a>
@@ -622,8 +569,6 @@ export default function Home() {
       <PaywallModal
         isOpen={paywallOpen}
         onClose={() => setPaywallOpen(false)}
-        reason={paywallReason}
-        premiumVoiceName={paywallVoice}
         lastResultImage={standardImage || undefined}
         lastCaption={caption || undefined}
         onShareToUnlock={handleShareToUnlock}

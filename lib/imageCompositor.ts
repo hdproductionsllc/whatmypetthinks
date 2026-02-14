@@ -375,12 +375,12 @@ async function drawBattle(
   const displayFont = '"Fredoka", "Nunito", sans-serif';
 
   // Layout calculations
-  const headerH = 100;
-  const photoMaxH = 500;
-  const photoGap = 40;
-  const cardPadding = 30;
-  const cardGap = 20;
-  const footerH = 80;
+  const headerH = 80;
+  const photoMaxH = 700;
+  const photoGap = 30;
+  const cardPadding = 24;
+  const cardGap = 14;
+  const footerH = 60;
 
   // Calculate photo dimensions
   const photoMaxW = W - 80;

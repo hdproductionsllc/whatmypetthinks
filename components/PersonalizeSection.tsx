@@ -53,7 +53,7 @@ export default function PersonalizeSection({
   };
 
   return (
-    <div className="px-4 py-2">
+    <div className="px-3 py-1.5">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center gap-2 text-sm font-semibold text-charcoal-light transition hover:text-charcoal"

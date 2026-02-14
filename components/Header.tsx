@@ -1,6 +1,6 @@
 "use client";
 
-import { getFreeUsesRemaining, getPremiumCredits } from "@/lib/usageTracker";
+import { getAvailableCredits } from "@/lib/usageTracker";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -8,16 +8,14 @@ interface Props {
 }
 
 export default function Header({ creditRefresh }: Props) {
-  const [freeLeft, setFreeLeft] = useState<number | null>(null);
-  const [premiumLeft, setPremiumLeft] = useState<number>(0);
+  const [creditsLeft, setCreditsLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    setFreeLeft(getFreeUsesRemaining());
-    setPremiumLeft(getPremiumCredits());
+    setCreditsLeft(getAvailableCredits());
   }, [creditRefresh]);
 
   return (
-    <header className="flex items-center justify-between px-4 py-3">
+    <header className="flex items-center justify-between px-3 py-2">
       <div className="flex items-center gap-2">
         {/* Paw icon */}
         <svg
@@ -38,22 +36,15 @@ export default function Header({ creditRefresh }: Props) {
           PetSubtitles
         </h1>
       </div>
-      <div className="flex items-center gap-2">
-        {freeLeft !== null && (
-          <div className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            freeLeft > 0
-              ? "bg-amber/10 text-amber"
-              : "bg-red-50 text-red-500"
-          }`}>
-            {freeLeft > 0 ? `🐾 ${freeLeft} free today` : "0 free left"}
-          </div>
-        )}
-        {premiumLeft > 0 && (
-          <div className="rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-600">
-            ✨ {premiumLeft}
-          </div>
-        )}
-      </div>
+      {creditsLeft !== null && (
+        <div className={`rounded-full px-3 py-1 text-sm font-semibold ${
+          creditsLeft > 0
+            ? "bg-amber/10 text-amber"
+            : "bg-red-50 text-red-500"
+        }`}>
+          {creditsLeft > 0 ? `🐾 ${creditsLeft} left today` : "0 left today"}
+        </div>
+      )}
     </header>
   );
 }

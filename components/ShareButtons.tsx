@@ -60,7 +60,7 @@ export default function ShareButtons({
   const handleInstagram = () => {
     trackEvent("share_tapped", { platform: "instagram" });
     downloadImage(storyImageUrl, generateFilename(voiceStyle, true));
-    showToast("Image saved! Opening Instagram...");
+    showToast("Image saved! Paste it in Instagram.");
     setTimeout(() => openInstagram(), 800);
     if (onShareComplete) onShareComplete();
   };
@@ -68,20 +68,24 @@ export default function ShareButtons({
   const handleTikTok = () => {
     trackEvent("share_tapped", { platform: "tiktok" });
     downloadImage(standardImageUrl, generateFilename(voiceStyle));
-    showToast("Image saved! Opening TikTok...");
+    showToast("Image saved! Paste it in TikTok.");
     setTimeout(() => openTikTok(), 800);
     if (onShareComplete) onShareComplete();
   };
 
   const handleX = () => {
     trackEvent("share_tapped", { platform: "x" });
-    shareToX(caption);
+    downloadImage(standardImageUrl, generateFilename(voiceStyle));
+    showToast("Image saved! Attach it to your tweet.");
+    setTimeout(() => shareToX(caption), 800);
     if (onShareComplete) onShareComplete();
   };
 
   const handleFacebook = () => {
     trackEvent("share_tapped", { platform: "facebook" });
-    shareToFacebook();
+    downloadImage(standardImageUrl, generateFilename(voiceStyle));
+    showToast("Image saved! Attach it to your post.");
+    setTimeout(() => shareToFacebook(), 800);
     if (onShareComplete) onShareComplete();
   };
 
@@ -99,17 +103,17 @@ export default function ShareButtons({
   };
 
   return (
-    <div className="px-4 py-3 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+    <div className="px-3 py-2 animate-fade-up" style={{ animationDelay: "0.15s" }}>
       {/* Save buttons */}
       <button
         onClick={handleSave}
-        className="btn-press mb-2 w-full rounded-2xl bg-coral px-4 py-4 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[56px]"
+        className="btn-press mb-1.5 w-full rounded-2xl bg-coral px-4 py-3 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[48px]"
       >
         💾 Save Image
       </button>
       <button
         onClick={handleSaveStory}
-        className="btn-press mb-3 w-full rounded-2xl border-2 border-coral bg-white px-4 py-4 text-base font-bold text-coral transition hover:bg-coral/5 min-h-[56px]"
+        className="btn-press mb-2 w-full rounded-2xl border-2 border-coral bg-white px-4 py-3 text-base font-bold text-coral transition hover:bg-coral/5 min-h-[48px]"
       >
         📱 Save for Stories (9:16)
       </button>
@@ -117,7 +121,7 @@ export default function ShareButtons({
       {/* Share incentive */}
       {canEarnCredit && (
         <p className="mb-2 text-center text-xs font-semibold text-coral">
-          Share to unlock a premium voice!
+          Share to earn more translations!
         </p>
       )}
 
