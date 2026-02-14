@@ -134,13 +134,14 @@ function drawStandard(
   // 2. Caption text in per-line subtitle boxes (no gradient overlay)
   const padding = w * 0.06;
   const maxTextWidth = w - padding * 2;
+  const minFontSize = Math.max(20, Math.round(w * 0.028));
   const { lines, fontSize } = fitText(
     ctx,
     caption,
     maxTextWidth,
-    3,
+    5,
     Math.round(w * 0.045),
-    14,
+    minFontSize,
     fontFamily
   );
 
@@ -152,7 +153,7 @@ function drawStandard(
   const boxGap = Math.round(fontSize * 0.2);
   const textBlockHeight = lines.length * boxLineHeight + (lines.length - 1) * boxGap;
   const bottomPadding = h * 0.04;
-  const blockStartY = h - bottomPadding - textBlockHeight;
+  const blockStartY = Math.max(h * 0.15, h - bottomPadding - textBlockHeight);
 
   ctx.font = `bold ${fontSize}px ${fontFamily}`;
   ctx.textAlign = "center";
