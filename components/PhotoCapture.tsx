@@ -73,8 +73,8 @@ export default function PhotoCapture({
         <img
           src={previewUrl}
           alt="Selected pet photo"
-          className="w-full rounded-3xl object-cover shadow-lg"
-          style={{ maxHeight: "400px" }}
+          className="w-full rounded-3xl shadow-lg"
+          style={{ maxHeight: "60vh", objectFit: "contain" }}
         />
         <button
           onClick={onClear}

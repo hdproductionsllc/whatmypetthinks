@@ -22,15 +22,15 @@ export function incrementUsage(): void {
 }
 
 export function hasReachedLimit(): boolean {
-  return getUsageToday() >= FREE_DAILY_LIMIT;
+  return false; // unlimited
 }
 
 export function getRemainingTranslations(): number {
-  return Math.max(0, FREE_DAILY_LIMIT - getUsageToday());
+  return Infinity;
 }
 
-export function isPremiumVoice(voice: string): boolean {
-  return voice !== "funny";
+export function isPremiumVoice(voiceId: string): boolean {
+  return false; // all voices unlocked for now
 }
 
 export function saveWaitlistEmail(email: string): void {

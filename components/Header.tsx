@@ -32,8 +32,8 @@ export default function Header() {
           PetSubtitles
         </h1>
       </div>
-      <div className="text-sm text-charcoal-light">
-        <span className="font-semibold text-amber">{remaining}</span> free today
+      <div className="rounded-full bg-amber/10 px-3 py-1 text-sm font-semibold text-amber">
+        Pro
       </div>
     </header>
   );

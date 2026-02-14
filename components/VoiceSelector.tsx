@@ -4,12 +4,12 @@ import type { VoiceStyle } from "@/lib/anthropic";
 
 const VOICES: { id: VoiceStyle; label: string; emoji: string; premium: boolean }[] = [
   { id: "funny", label: "Funny", emoji: "😂", premium: false },
-  { id: "sassy", label: "Sassy", emoji: "💅", premium: true },
-  { id: "philosophical", label: "Deep", emoji: "🤔", premium: true },
-  { id: "dramatic", label: "Drama", emoji: "🎭", premium: true },
-  { id: "wholesome", label: "Sweet", emoji: "🥰", premium: true },
-  { id: "unhinged", label: "Chaos", emoji: "🤪", premium: true },
-  { id: "poetic", label: "Poetic", emoji: "✨", premium: true },
+  { id: "sassy", label: "Sassy", emoji: "💅", premium: false },
+  { id: "philosophical", label: "Deep", emoji: "🤔", premium: false },
+  { id: "dramatic", label: "Drama", emoji: "🎭", premium: false },
+  { id: "wholesome", label: "Sweet", emoji: "🥰", premium: false },
+  { id: "unhinged", label: "Chaos", emoji: "🤪", premium: false },
+  { id: "poetic", label: "Poetic", emoji: "✨", premium: false },
 ];
 
 interface Props {

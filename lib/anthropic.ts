@@ -56,7 +56,7 @@ export async function translatePetPhoto(
     : SYSTEM_PROMPT;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5-20250514",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 256,
     system: systemPrompt,
     messages: [

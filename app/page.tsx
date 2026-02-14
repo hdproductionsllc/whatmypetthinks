@@ -236,12 +236,8 @@ export default function Home() {
         </>
       )}
 
-      {/* Remaining counter */}
-      {appState !== "result" && (
-        <div className="mt-2 text-center text-xs text-charcoal-light/60">
-          {remaining} free translation{remaining !== 1 ? "s" : ""} remaining today
-        </div>
-      )}
+      {/* Spacer when no result */}
+      {appState !== "result" && <div className="mt-2" />}
 
       {/* Recent history */}
       <div className="mt-auto">
