@@ -43,17 +43,22 @@ export default function ShareButtons({
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleShare = async () => {
+    trackEvent("share_tapped", { platform: "share_feed" });
+    const shared = await shareImage(standardImageUrl, caption, voiceStyle);
+    if (shared && onShareComplete) onShareComplete();
+  };
+
+  const handleShareStory = async () => {
+    trackEvent("share_tapped", { platform: "share_story" });
+    const shared = await shareImage(storyImageUrl, caption, voiceStyle, true);
+    if (shared && onShareComplete) onShareComplete();
+  };
+
   const handleSave = () => {
     trackEvent("share_tapped", { platform: "save" });
     downloadImage(standardImageUrl, generateFilename(voiceStyle));
     showToast("Saved! 🐾");
-    if (onShareComplete) onShareComplete();
-  };
-
-  const handleSaveStory = () => {
-    trackEvent("share_tapped", { platform: "save_story" });
-    downloadImage(storyImageUrl, generateFilename(voiceStyle, true));
-    showToast("Story image saved! 🐾");
     if (onShareComplete) onShareComplete();
   };
 
@@ -96,114 +101,108 @@ export default function ShareButtons({
     if (onShareComplete) onShareComplete();
   };
 
-  const handleMore = async () => {
-    trackEvent("share_tapped", { platform: "more" });
-    const shared = await shareImage(standardImageUrl, caption, voiceStyle);
-    if (shared && onShareComplete) onShareComplete();
-  };
-
   return (
     <div className="px-3 py-2 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-      {/* Save buttons */}
-      <button
-        onClick={handleSave}
-        className="btn-press mb-1.5 w-full rounded-2xl bg-coral px-4 py-3 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[48px]"
-      >
-        💾 Save Image
-      </button>
-      <button
-        onClick={handleSaveStory}
-        className="btn-press mb-2 w-full rounded-2xl border-2 border-coral bg-white px-4 py-3 text-base font-bold text-coral transition hover:bg-coral/5 min-h-[48px]"
-      >
-        📱 Save for Stories (9:16)
-      </button>
-
       {/* Share incentive */}
       {canEarnCredit && (
-        <p className="mb-2 text-center text-xs font-semibold text-coral">
+        <p className="mb-1.5 text-center text-xs font-semibold text-coral">
           Share to earn more translations!
         </p>
       )}
 
-      {/* Platform sharing icons */}
-      <div className="mb-3 flex items-center justify-center gap-3">
-        {/* Instagram */}
-        <button
-          onClick={handleInstagram}
-          className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-          style={{ backgroundColor: "#E4405F" }}
-          aria-label="Share to Instagram"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-          </svg>
-        </button>
-
-        {/* TikTok */}
-        <button
-          onClick={handleTikTok}
-          className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-          style={{ backgroundColor: "#000000" }}
-          aria-label="Share to TikTok"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.43v-7.15a8.16 8.16 0 005.58 2.2V11.2a4.85 4.85 0 01-2.4-.65 4.83 4.83 0 01-1.6-1.6v-.01l.01-2.25h-.01z" />
-          </svg>
-        </button>
-
-        {/* X / Twitter */}
-        <button
-          onClick={handleX}
-          className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-          style={{ backgroundColor: "#000000" }}
-          aria-label="Share to X"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-        </button>
-
-        {/* Facebook */}
-        <button
-          onClick={handleFacebook}
-          className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-          style={{ backgroundColor: "#1877F2" }}
-          aria-label="Share to Facebook"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-          </svg>
-        </button>
-
-        {/* Copy Link */}
-        <button
-          onClick={handleCopy}
-          className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-          style={{ backgroundColor: "#6B7280" }}
-          aria-label="Copy link"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-          </svg>
-        </button>
-
-        {/* More (Web Share API) */}
-        {webShareAvailable && (
+      {/* Mobile: two share buttons via Web Share API */}
+      {webShareAvailable && (
+        <div className="mb-1.5 flex gap-2">
           <button
-            onClick={handleMore}
-            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
-            style={{ backgroundColor: "#FF6B4A" }}
-            aria-label="More sharing options"
+            onClick={handleShare}
+            className="btn-press flex-1 rounded-2xl bg-coral px-4 py-3 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[48px]"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <circle cx="5" cy="12" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="19" cy="12" r="2" />
+            Share
+          </button>
+          <button
+            onClick={handleShareStory}
+            className="btn-press flex-1 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 text-base font-bold text-white shadow-lg transition hover:opacity-90 min-h-[48px]"
+          >
+            Share to Story
+          </button>
+        </div>
+      )}
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        className="btn-press mb-2 w-full rounded-2xl border-2 border-coral bg-white px-4 py-3 text-base font-bold text-coral transition hover:bg-coral/5 min-h-[48px]"
+      >
+        💾 Save Image
+      </button>
+
+      {/* Desktop fallback: platform buttons (save image + open platform) */}
+      {!webShareAvailable && (
+        <div className="mb-2 flex items-center justify-center gap-3">
+          {/* Instagram */}
+          <button
+            onClick={handleInstagram}
+            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
+            style={{ background: "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)" }}
+            aria-label="Share to Instagram"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
             </svg>
           </button>
-        )}
-      </div>
+
+          {/* TikTok — official brand icon with cyan/red/white layers */}
+          <button
+            onClick={handleTikTok}
+            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
+            style={{ backgroundColor: "#000000" }}
+            aria-label="Share to TikTok"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12.53 2h3.27a4.37 4.37 0 002.75 3.55 4.37 4.37 0 001.45.35v3.31a7.64 7.64 0 01-4.2-1.26v5.73A6.47 6.47 0 019.33 20a6.47 6.47 0 01-4.28-1.63A6.47 6.47 0 013 13.68a6.47 6.47 0 016.47-6.47c.35 0 .69.03 1.03.08v3.35a3.17 3.17 0 00-1.03-.17 3.17 3.17 0 00-3.17 3.17 3.17 3.17 0 003.17 3.17A3.17 3.17 0 0012.64 14l.03-12h-.14z" fill="#25F4EE" />
+              <path d="M13.53 2h3.27a4.37 4.37 0 002.75 3.55 4.37 4.37 0 001.45.35v3.31a7.64 7.64 0 01-4.2-1.26v5.73A6.47 6.47 0 0110.33 20a6.47 6.47 0 01-4.28-1.63A6.47 6.47 0 014 13.68a6.47 6.47 0 016.47-6.47c.35 0 .69.03 1.03.08v3.35a3.17 3.17 0 00-1.03-.17 3.17 3.17 0 00-3.17 3.17 3.17 3.17 0 003.17 3.17A3.17 3.17 0 0013.64 14l.03-12h-.14z" fill="#FE2C55" />
+              <path d="M13.03 2h3.27a4.37 4.37 0 002.75 3.55 4.37 4.37 0 001.45.35v3.31a7.64 7.64 0 01-4.2-1.26v5.73A6.47 6.47 0 019.83 20a6.47 6.47 0 01-4.28-1.63A6.47 6.47 0 013.5 13.68a6.47 6.47 0 016.47-6.47c.35 0 .69.03 1.03.08v3.35a3.17 3.17 0 00-1.03-.17 3.17 3.17 0 00-3.17 3.17 3.17 3.17 0 003.17 3.17A3.17 3.17 0 0013.14 14l.03-12h-.14z" fill="white" />
+            </svg>
+          </button>
+
+          {/* X / Twitter */}
+          <button
+            onClick={handleX}
+            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
+            style={{ backgroundColor: "#000000" }}
+            aria-label="Share to X"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </button>
+
+          {/* Facebook */}
+          <button
+            onClick={handleFacebook}
+            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
+            style={{ backgroundColor: "#1877F2" }}
+            aria-label="Share to Facebook"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </button>
+
+          {/* Copy Link */}
+          <button
+            onClick={handleCopy}
+            className="btn-press flex h-12 w-12 items-center justify-center rounded-full shadow-sm transition hover:scale-110"
+            style={{ backgroundColor: "#6B7280" }}
+            aria-label="Copy link"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Action buttons row */}
       <div className="flex gap-2">
