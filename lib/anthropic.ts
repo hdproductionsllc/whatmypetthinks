@@ -105,7 +105,7 @@ export async function translatePetPhoto(
     : SYSTEM_PROMPT;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 256,
     system: systemPrompt,
     messages: [
@@ -142,7 +142,7 @@ export async function translatePetPhoto(
   if (caption.length < 20 || caption.length > 300) {
     const issue = caption.length < 20 ? "short" : "long";
     const retryResponse = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 256,
       system: systemPrompt,
       messages: [
