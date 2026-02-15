@@ -31,7 +31,7 @@ export default function VoiceSelector({ selected, onSelect, format, onFormatChan
                   : "text-charcoal-light"
               }`}
             >
-              Caption
+              Meme
             </button>
             <button
               onClick={() => onFormatChange("convo")}

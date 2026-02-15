@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-charcoal mb-8">
         Privacy Policy
       </h1>
-      <p className="text-sm text-charcoal-light mb-8">Last updated: February 13, 2026</p>
+      <p className="text-sm text-charcoal-light mb-8">Last updated: February 15, 2026</p>
 
       <div className="space-y-6 text-charcoal-light leading-relaxed">
         <section>
@@ -59,11 +59,56 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-lg font-bold text-charcoal mb-2">User-Generated Content &amp; Marketing</h2>
+          <p>
+            By using What My Pet Thinks, you grant us a non-exclusive, royalty-free, worldwide license
+            to use, display, reproduce, and distribute the AI-generated captions, text conversations,
+            and composited images created through the service for marketing, promotional, and
+            advertising purposes. This includes but is not limited to: featuring content on our
+            website, social media accounts, advertisements, and marketing materials.
+          </p>
+          <p className="mt-2">
+            This license applies to the AI-generated text and the final composited images (photo +
+            caption overlay). We will not sell your original uploaded photos separately or use them
+            outside the context of the generated content.
+          </p>
+          <p className="mt-2">
+            If you do not want your generated content to be used for marketing purposes, please
+            contact us at{" "}
+            <a
+              href="mailto:hello@whatmypetthinks.com"
+              className="text-teal underline hover:text-teal/80"
+            >
+              hello@whatmypetthinks.com
+            </a>{" "}
+            and we will remove it promptly.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-bold text-charcoal mb-2">Sharing</h2>
           <p>
             When you share a captioned image, the sharing is handled entirely by your device&apos;s
             native share functionality. We do not track or store what you share or who you share
             with.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold text-charcoal mb-2">Payments &amp; Subscriptions</h2>
+          <p>
+            Paid subscriptions are processed by{" "}
+            <a
+              href="https://stripe.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal underline hover:text-teal/80"
+            >
+              Stripe
+            </a>
+            . We do not store your credit card details. Stripe handles all payment processing
+            securely. We store only your email address and Stripe customer ID to manage your
+            subscription.
           </p>
         </section>
 

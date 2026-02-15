@@ -7,16 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npm run build && vercel --prod --yes --name whatmypetthinks",
+    "deploy": "npm run build && vercel --prod --yes",
     "generate-samples": "node scripts/generate-samples.js && node scripts/generate-og.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@supabase/supabase-js": "^2.95.3",
     "heic2any": "^0.0.4",
     "next": "16.1.6",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -24,6 +26,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "canvas": "^3.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "sharp": "^0.34.5",

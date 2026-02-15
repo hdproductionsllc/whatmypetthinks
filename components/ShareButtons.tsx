@@ -12,7 +12,6 @@ import {
   shareToX,
   shareToFacebook,
 } from "@/lib/shareUtils";
-import { canEarnShareCredit } from "@/lib/usageTracker";
 import { trackEvent } from "@/lib/analytics";
 
 interface Props {
@@ -21,7 +20,6 @@ interface Props {
   caption: string;
   voiceStyle?: string;
   isConvo?: boolean;
-  onShareComplete?: () => void;
   onDifferentCaption?: () => void;
   onTryVoice?: () => void;
   suggestedVoiceName?: string;
@@ -34,7 +32,6 @@ export default function ShareButtons({
   caption,
   voiceStyle,
   isConvo,
-  onShareComplete,
   onDifferentCaption,
   onTryVoice,
   suggestedVoiceName,
@@ -42,7 +39,6 @@ export default function ShareButtons({
 }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const webShareAvailable = canUseWebShare();
-  const canEarnCredit = canEarnShareCredit();
 
   const shareText = isConvo
     ? "find out what your pet would text you 😂 whatmypetthinks.com #WhatMyPetThinks"
@@ -64,14 +60,12 @@ export default function ShareButtons({
 
   const handleShare = async () => {
     trackEvent("share_tapped", { platform: "share_feed" });
-    const shared = await shareImage(standardImageUrl, caption, voiceStyle, false, isConvo);
-    if (shared && onShareComplete) onShareComplete();
+    await shareImage(standardImageUrl, caption, voiceStyle, false, isConvo);
   };
 
   const handleShareStory = async () => {
     trackEvent("share_tapped", { platform: "share_story" });
-    const shared = await shareImage(storyImageUrl, caption, voiceStyle, true, isConvo);
-    if (shared && onShareComplete) onShareComplete();
+    await shareImage(storyImageUrl, caption, voiceStyle, true, isConvo);
   };
 
   const handleSave = async () => {
@@ -84,20 +78,17 @@ export default function ShareButtons({
         const file = new File([blob], generateFilename(voiceStyle, false, isConvo), { type: "image/png" });
         await navigator.share({ files: [file] });
         showToast("Saved! 🐾");
-        if (onShareComplete) onShareComplete();
       } catch (err) {
         if (err instanceof Error && err.name !== "AbortError") {
           // Fallback to download if share fails
           downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
           showToast("Saved! 🐾");
-          if (onShareComplete) onShareComplete();
         }
       }
     } else {
       downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
       const copied = await copyShareText();
       showToast(copied ? "Saved! Caption copied 📋" : "Saved! 🐾");
-      if (onShareComplete) onShareComplete();
     }
   };
 
@@ -107,7 +98,6 @@ export default function ShareButtons({
     await copyShareText();
     showToast("Image saved! Caption copied 📋");
     setTimeout(() => openInstagram(), 800);
-    if (onShareComplete) onShareComplete();
   };
 
   const handleTikTok = async () => {
@@ -116,7 +106,7 @@ export default function ShareButtons({
     await copyShareText();
     showToast("Image saved! Caption copied 📋");
     setTimeout(() => openTikTok(), 800);
-    if (onShareComplete) onShareComplete();
+
   };
 
   const handleX = async () => {
@@ -125,7 +115,7 @@ export default function ShareButtons({
     await copyShareText();
     showToast("Image saved! Caption copied 📋");
     setTimeout(() => shareToX(caption, isConvo), 800);
-    if (onShareComplete) onShareComplete();
+
   };
 
   const handleFacebook = async () => {
@@ -134,25 +124,18 @@ export default function ShareButtons({
     await copyShareText();
     showToast("Image saved! Caption copied 📋");
     setTimeout(() => shareToFacebook(), 800);
-    if (onShareComplete) onShareComplete();
+
   };
 
   const handleCopy = async () => {
     trackEvent("share_tapped", { platform: "copy_link" });
     await navigator.clipboard.writeText(shareText).catch(() => {});
     showToast("Caption copied to clipboard! 📋");
-    if (onShareComplete) onShareComplete();
+
   };
 
   return (
     <div className="px-3 py-2 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-      {/* Share incentive */}
-      {canEarnCredit && (
-        <p className="mb-1.5 text-center text-xs font-semibold text-coral">
-          Share to earn more translations!
-        </p>
-      )}
-
       {/* Mobile: share button via Web Share API */}
       {webShareAvailable && (
         <div className="mb-1.5">

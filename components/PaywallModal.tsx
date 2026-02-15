@@ -2,30 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  getShareCreditsRemaining,
   isPremium,
   getPremiumCustomerId,
   activatePremium,
 } from "@/lib/usageTracker";
-import { canUseWebShare, shareImage } from "@/lib/shareUtils";
 import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  lastResultImage?: string;
-  lastCaption?: string;
-  onShareToUnlock?: () => void;
 }
 
 export default function PaywallModal({
   isOpen,
   onClose,
-  lastResultImage,
-  lastCaption,
-  onShareToUnlock,
 }: Props) {
-  const [sharing, setSharing] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
   const [restoreEmail, setRestoreEmail] = useState("");
@@ -34,9 +25,6 @@ export default function PaywallModal({
   >("idle");
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const shareCreditsLeft = getShareCreditsRemaining();
-  const canShareToUnlock =
-    shareCreditsLeft > 0 && (lastResultImage ? canUseWebShare() : true);
   const userIsPremium = isPremium();
   const customerId = getPremiumCustomerId();
 
@@ -61,26 +49,6 @@ export default function PaywallModal({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const handleShareToUnlock = async () => {
-    if (lastResultImage && lastCaption) {
-      setSharing(true);
-      try {
-        const shared = await shareImage(lastResultImage, lastCaption);
-        if (shared && onShareToUnlock) {
-          onShareToUnlock();
-          onClose();
-        }
-      } catch {
-        // Share cancelled or failed
-      } finally {
-        setSharing(false);
-      }
-    } else if (onShareToUnlock) {
-      onShareToUnlock();
-      onClose();
-    }
-  };
 
   const handleSubscribe = async () => {
     setIsSubscribing(true);
@@ -192,35 +160,6 @@ export default function PaywallModal({
           </p>
         </div>
 
-        {/* Share to unlock option */}
-        {canShareToUnlock && (
-          <div className="mt-5">
-            <p className="mb-3 text-center text-sm text-charcoal-light">
-              Share a result to earn 1 more translation
-              <span className="block text-xs text-charcoal/40 mt-1">
-                ({shareCreditsLeft} share credit
-                {shareCreditsLeft !== 1 ? "s" : ""} left today)
-              </span>
-            </p>
-            <button
-              onClick={handleShareToUnlock}
-              disabled={sharing}
-              className="btn-press w-full rounded-2xl bg-teal px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-teal-dark min-h-[52px] disabled:opacity-50"
-            >
-              {sharing ? "Opening share..." : "Share & Unlock 1 More"}
-            </button>
-          </div>
-        )}
-
-        {/* Divider */}
-        {canShareToUnlock && !userIsPremium && (
-          <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-400">OR</span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
-        )}
-
         {/* Subscribe / Manage section */}
         {userIsPremium ? (
           // Premium user who hit the 20+share limit
@@ -233,11 +172,9 @@ export default function PaywallModal({
             </button>
           </div>
         ) : (
-          <div className={canShareToUnlock ? "" : "mt-5"}>
+          <div className="mt-5">
             <p className="mb-3 text-center text-sm text-charcoal-light">
-              {canShareToUnlock
-                ? "Or go unlimited with PRO"
-                : "Come back tomorrow, or unlock 20/day with PRO"}
+              Unlock 20/day with PRO
             </p>
 
             {/* Subscribe button */}

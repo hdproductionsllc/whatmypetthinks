@@ -1,65 +1,104 @@
-/** Conversation examples for the landing page carousel */
-export interface ConvoExample {
-  id: string;
-  petName: string;
-  petPhoto: string;
-  messages: { sender: "pet" | "owner"; text: string }[];
-}
+/** Carousel examples — mix of conversations and captions */
+export type CarouselExample =
+  | {
+      type: "convo";
+      id: string;
+      petName: string;
+      petPhoto: string;
+      messages: { sender: "pet" | "owner"; text: string; reaction?: string }[];
+    }
+  | {
+      type: "caption";
+      id: string;
+      petName: string;
+      petPhoto: string;
+      caption: string;
+      voiceLabel: string;
+    };
 
-export const CONVO_EXAMPLES: ConvoExample[] = [
+export const CAROUSEL_EXAMPLES: CarouselExample[] = [
   {
+    type: "convo",
     id: "mochi",
     petName: "Mochi",
     petPhoto: "/samples/corgi-mochi.jpg",
     messages: [
-      { sender: "owner", text: "mochi where are my airpods" },
-      { sender: "pet", text: "have you checked under the couch" },
-      { sender: "owner", text: "why would they be under the couch" },
-      { sender: "pet", text: "no reason" },
-      { sender: "pet", text: "unrelated but I was NOT chewing anything earlier" },
-      { sender: "owner", text: "MOCHI" },
-      { sender: "pet", text: "you have no proof" },
+      { sender: "pet", text: "hey i need to talk to you about something" },
+      { sender: "owner", text: "What did you do" },
+      { sender: "pet", text: "nothing i just have a medical condition now" },
+      { sender: "owner", text: "What kind of medical condition" },
+      { sender: "pet", text: "[PHOTO]" },
+      { sender: "pet", text: "very serious neck coldness. need this bandana for health" },
+      { sender: "owner", text: "I put that on you for the photo shoot", reaction: "👎" },
+      { sender: "pet", text: "yes for my CONDITION", reaction: "😂" },
+      { sender: "owner", text: "You just like how it looks" },
     ],
   },
   {
-    id: "chairman",
-    petName: "Chairman Meow",
-    petPhoto: "/samples/cat-chairman.jpg",
-    messages: [
-      { sender: "owner", text: "are you sitting on my laptop again" },
-      { sender: "pet", text: "no" },
-      { sender: "owner", text: "I can literally see you on the camera" },
-      { sender: "pet", text: "then why did you ask" },
-      { sender: "pet", text: "also I deleted some of your emails" },
-      { sender: "pet", text: "you're welcome" },
-    ],
-  },
-  {
+    type: "convo",
     id: "biscuit",
     petName: "Biscuit",
     petPhoto: "/samples/pug-biscuit.jpg",
     messages: [
-      { sender: "pet", text: "MOM" },
-      { sender: "pet", text: "MOM" },
-      { sender: "pet", text: "MOOOOOM" },
-      { sender: "owner", text: "biscuit it's 6am what" },
-      { sender: "pet", text: "I HEARD A SOUND" },
-      { sender: "owner", text: "that was the refrigerator" },
-      { sender: "pet", text: "ok but WHAT IF IT WASN'T" },
+      { sender: "pet", text: "hey so im coming home" },
+      { sender: "owner", text: "Great! When?" },
+      { sender: "pet", text: "whenever i get there" },
+      { sender: "pet", text: "took your skateboard hope thats cool" },
+      { sender: "owner", text: "You can't ride a skateboard." },
+      { sender: "pet", text: "[PHOTO]" },
+      { sender: "owner", text: "You're just SITTING on it in the street!", reaction: "👍" },
+      { sender: "pet", text: "yeah its pretty fast" },
+      { sender: "owner", text: "IT'S NOT MOVING", reaction: "😂" },
     ],
   },
   {
+    type: "convo",
+    id: "koda",
+    petName: "Koda",
+    petPhoto: "/samples/husky-koda.jpg",
+    messages: [
+      { sender: "pet", text: "i have perished" },
+      { sender: "owner", text: "You're literally fine" },
+      { sender: "pet", text: "no im dead from belly rub deficiency" },
+      { sender: "owner", text: "You got belly rubs an hour ago" },
+      { sender: "pet", text: "that was FOREVER ago", reaction: "‼️" },
+      { sender: "pet", text: "[PHOTO]" },
+      { sender: "pet", text: "see i am deceased" },
+      { sender: "owner", text: "I can see my hand petting your belly right now" },
+      { sender: "pet", text: "too late already a ghost", reaction: "😂" },
+    ],
+  },
+  {
+    type: "convo",
+    id: "chairman",
+    petName: "Chairman Meow",
+    petPhoto: "/samples/cat-chairman.jpg",
+    messages: [
+      { sender: "pet", text: "we need to talk about my compensation" },
+      { sender: "owner", text: "What are you talking about?" },
+      { sender: "pet", text: "found these in your drawer" },
+      { sender: "pet", text: "[PHOTO]" },
+      { sender: "owner", text: "Those are MY sunglasses!", reaction: "👎" },
+      { sender: "pet", text: "im clearly the star of this household" },
+      { sender: "owner", text: "You're wearing them on your forehead" },
+      { sender: "pet", text: "its called fashion linda", reaction: "😂" },
+    ],
+  },
+  {
+    type: "convo",
     id: "luna",
     petName: "Luna",
     petPhoto: "/samples/cat-luna.jpg",
     messages: [
-      { sender: "owner", text: "luna why is there a dead bug on my pillow" },
-      { sender: "pet", text: "it's a gift" },
-      { sender: "owner", text: "I don't want it" },
-      { sender: "pet", text: "the disrespect" },
-      { sender: "pet", text: "I hunted that FOR you" },
-      { sender: "owner", text: "please stop" },
-      { sender: "pet", text: "no" },
+      { sender: "pet", text: "need you home right now" },
+      { sender: "owner", text: "What's wrong?" },
+      { sender: "pet", text: "its serious" },
+      { sender: "owner", text: "Luna are you okay??" },
+      { sender: "pet", text: "[PHOTO]" },
+      { sender: "owner", text: "You texted me 911 because you're YAWNING?", reaction: "‼️" },
+      { sender: "pet", text: "my jaw is stuck like this" },
+      { sender: "owner", text: "Your jaw is not stuck." },
+      { sender: "pet", text: "might be permanent. very tragic", reaction: "❤️" },
     ],
   },
 ];

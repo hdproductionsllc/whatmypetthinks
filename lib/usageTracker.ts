@@ -1,8 +1,7 @@
 "use client";
 
-const FREE_USES_PER_DAY = 5;
+const FREE_USES_PER_DAY = 50;
 const PREMIUM_USES_PER_DAY = 20;
-const MAX_SHARE_CREDITS_PER_DAY = 3;
 
 // Premium storage keys
 const PREMIUM_KEY = "wmpt_premium";
@@ -127,8 +126,7 @@ export async function reverifyPremium(): Promise<boolean> {
 export function getAvailableCredits(): number {
   const dailyLimit = isPremium() ? PREMIUM_USES_PER_DAY : FREE_USES_PER_DAY;
   const used = getNum(storageKey("free_used"));
-  const earned = getShareCreditsToday();
-  return Math.max(0, dailyLimit - used + earned);
+  return Math.max(0, dailyLimit - used);
 }
 
 /** Whether the user can translate */
@@ -140,31 +138,6 @@ export function hasCredits(): boolean {
 export function useCredit(): void {
   const key = storageKey("free_used");
   setNum(key, getNum(key) + 1);
-}
-
-// --- Share-to-unlock ---
-
-/** How many share credits earned today */
-function getShareCreditsToday(): number {
-  return getNum(storageKey("shares"));
-}
-
-/** Whether the user can still earn credits by sharing today */
-export function canEarnShareCredit(): boolean {
-  return getShareCreditsToday() < MAX_SHARE_CREDITS_PER_DAY;
-}
-
-/** How many share credits remain earnable today */
-export function getShareCreditsRemaining(): number {
-  return Math.max(0, MAX_SHARE_CREDITS_PER_DAY - getShareCreditsToday());
-}
-
-/** Earn a credit by sharing. Returns true if credit was earned. */
-export function earnShareCredit(): boolean {
-  if (!canEarnShareCredit()) return false;
-  const sharesKey = storageKey("shares");
-  setNum(sharesKey, getShareCreditsToday() + 1);
-  return true;
 }
 
 // --- Waitlist (legacy) ---

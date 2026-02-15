@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  redirects: async () => [
+    {
+      source: "/:path*",
+      has: [{ type: "host", value: "petsubtitles.com" }],
+      destination: "https://whatmypetthinks.com/:path*",
+      permanent: true,
+    },
+    {
+      source: "/:path*",
+      has: [{ type: "host", value: "www.petsubtitles.com" }],
+      destination: "https://whatmypetthinks.com/:path*",
+      permanent: true,
+    },
+  ],
   headers: async () => [
     {
       source: "/manifest.json",
