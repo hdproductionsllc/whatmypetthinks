@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "./supabase";
+import { hasFaces } from "./faceDetector";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const UPLOAD_COOLDOWN_MS = 5000;
@@ -48,6 +49,9 @@ export function uploadTranslation(
       const now = Date.now();
       if (now - lastUploadTime < UPLOAD_COOLDOWN_MS) return;
       lastUploadTime = now;
+
+      // Skip upload if human faces detected in the image
+      if (await hasFaces(standardDataUrl)) return;
 
       // Compress to JPEG (PNG composites are 3-5MB, JPEG brings them to ~200-500KB)
       const blob = await compressToJpeg(standardDataUrl);

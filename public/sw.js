@@ -1,6 +1,5 @@
-const CACHE_NAME = "whatmypetthinks-v2";
+const CACHE_NAME = "whatmypetthinks-v3";
 const STATIC_ASSETS = [
-  "/",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -41,7 +40,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch — network first, fall back to cache
+// Fetch — network first, cache fallback for static assets only
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
@@ -50,26 +49,32 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Never intercept navigation requests — let the browser handle HTML pages directly
+  // This prevents stale cached pages from trapping users after deploys
+  if (request.mode === "navigate") {
+    return;
+  }
+
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Cache successful responses for static assets
+        // Only cache static assets (images, icons, manifest), not JS/CSS chunks
         if (response.ok && response.type === "basic") {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
-          });
+          const url = new URL(request.url);
+          const isStaticAsset = STATIC_ASSETS.some((asset) => url.pathname === asset);
+          if (isStaticAsset) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clone);
+            });
+          }
         }
         return response;
       })
       .catch(() => {
-        // Network failed — try cache
+        // Network failed — try cache for static assets only
         return caches.match(request).then((cached) => {
           if (cached) return cached;
-          // Return cached home page for navigation requests (SPA fallback)
-          if (request.mode === "navigate") {
-            return caches.match("/");
-          }
           return new Response("Offline", { status: 503 });
         });
       })
