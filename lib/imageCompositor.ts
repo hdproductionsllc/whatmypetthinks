@@ -128,11 +128,11 @@ function drawOutlinedText(
   }
 }
 
-/** Crop an image to landscape (16:9) centered on the pet's eyes.
- *  - If the image is already landscape-ish (aspect >= 1.4), return it as-is on a canvas.
- *  - Otherwise crop to 16:9, keeping full width and reducing height.
- *  - petFaceY (0.0-1.0) is where the pet's eyes are vertically; crop centers on that point
- *    with eyes placed at ~38% from the top for natural framing.
+/** Crop an image to landscape (16:9) with pet's eyes safely below the text overlay zone.
+ *  - Text overlays occupy roughly the top/bottom 20% of the meme, so eyes must land
+ *    in the safe middle zone (~28-72% from top).
+ *  - For landscape images: crops bottom if eyes are too high.
+ *  - For portrait/square: crops to 16:9, centering eyes at 50%.
  *  - Never crops more than 60% of original height.
  */
 function cropToLandscape(
@@ -142,11 +142,24 @@ function cropToLandscape(
   const srcW = img.naturalWidth;
   const srcH = img.naturalHeight;
   const aspect = srcW / srcH;
+  const minH = Math.round(srcH * 0.4); // never crop more than 60%
+  const TEXT_SAFE_Y = 0.28; // eyes must be at least this far from top
 
   const canvas = document.createElement("canvas");
 
-  // Already landscape-ish — no crop needed
   if (aspect >= 1.4) {
+    // Already landscape — crop bottom if eyes would be in the text zone
+    if (petFaceY < TEXT_SAFE_Y) {
+      const safeCropH = Math.max(minH, Math.round(petFaceY * srcH / TEXT_SAFE_Y));
+      if (safeCropH < srcH) {
+        canvas.width = srcW;
+        canvas.height = safeCropH;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, srcW, safeCropH, 0, 0, srcW, safeCropH);
+        return canvas;
+      }
+    }
+
     canvas.width = srcW;
     canvas.height = srcH;
     const ctx = canvas.getContext("2d")!;
@@ -154,23 +167,28 @@ function cropToLandscape(
     return canvas;
   }
 
-  // Target 16:9 aspect ratio
+  // Portrait/square — crop to 16:9
   const targetH = Math.round(srcW / (16 / 9));
-  // Never crop more than 60% of original height
-  const minH = Math.round(srcH * 0.4);
-  const cropH = Math.max(targetH, minH);
+  let cropH = Math.max(targetH, minH);
+
+  // Position eyes at 50% of crop (centered, well clear of text overlays)
+  const eyePixelY = petFaceY * srcH;
+  let srcY = Math.round(eyePixelY - cropH * 0.50);
+  srcY = Math.max(0, Math.min(srcY, srcH - cropH));
+
+  // If eyes still land in the text zone after clamping, tighten the crop
+  const effectiveEyeY = (eyePixelY - srcY) / cropH;
+  if (effectiveEyeY < TEXT_SAFE_Y && cropH > minH) {
+    const safeCropH = Math.max(minH, Math.round(eyePixelY / TEXT_SAFE_Y));
+    if (safeCropH < cropH) {
+      cropH = safeCropH;
+      srcY = 0;
+    }
+  }
 
   canvas.width = srcW;
   canvas.height = cropH;
   const ctx = canvas.getContext("2d")!;
-
-  // Position crop window so pet's eyes sit at ~38% from top (natural framing)
-  const eyePixelY = petFaceY * srcH;
-  let srcY = Math.round(eyePixelY - cropH * 0.38);
-
-  // Clamp to valid range
-  srcY = Math.max(0, Math.min(srcY, srcH - cropH));
-
   ctx.drawImage(img, 0, srcY, srcW, cropH, 0, 0, srcW, cropH);
   return canvas;
 }

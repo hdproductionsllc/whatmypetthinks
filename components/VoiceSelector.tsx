@@ -4,9 +4,9 @@ import type { VoiceStyle } from "@/lib/anthropic";
 
 const VOICES: { id: VoiceStyle; label: string; emoji: string }[] = [
   { id: "funny", label: "Silly", emoji: "😂" },
-  { id: "passive", label: "Passive Agg", emoji: "😒" },
+  { id: "passive", label: "Passive", emoji: "😒" },
   { id: "genz", label: "Gen-Z", emoji: "💀" },
-  { id: "dramatic", label: "Dramatic Narrator", emoji: "🎬" },
+  { id: "dramatic", label: "Dramatic", emoji: "🎬" },
 ];
 
 interface Props {
@@ -46,7 +46,7 @@ export default function VoiceSelector({ selected, onSelect, format, onFormatChan
           </div>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1">
         {VOICES.map((voice) => {
           const isActive = selected === voice.id;
 
@@ -54,7 +54,7 @@ export default function VoiceSelector({ selected, onSelect, format, onFormatChan
             <button
               key={voice.id}
               onClick={() => onSelect(voice.id)}
-              className={`btn-press flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-all ${
+              className={`btn-press flex items-center gap-0.5 rounded-full px-2 py-1.5 text-xs font-semibold transition-all ${
                 isActive
                   ? "bg-coral text-white shadow-md"
                   : "bg-white text-charcoal shadow-sm ring-1 ring-gray-200"
