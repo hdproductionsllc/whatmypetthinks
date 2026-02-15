@@ -37,9 +37,9 @@ const ALL_VOICES: VoiceStyle[] = ["funny", "dramatic", "genz", "passive"];
 
 const VOICE_DISPLAY_NAMES: Record<VoiceStyle, string> = {
   funny: "Silly",
-  passive: "Passive Agg",
+  passive: "Passive",
   genz: "Gen-Z",
-  dramatic: "Dramatic Narrator",
+  dramatic: "Dramatic",
 };
 
 const VOICE_SUGGESTIONS: Record<VoiceStyle, VoiceStyle> = {
@@ -250,7 +250,7 @@ export default function Home() {
         trackEvent("translation_received", { voice_style: voiceToUse });
 
         try {
-          composited = await compositeSubtitles(imageData.originalDataUrl, mc, data.petY);
+          composited = await compositeSubtitles(imageData.originalDataUrl, mc, data.petFaceY);
         } catch {
           throw new Error("Couldn't create the meme image. Try a different photo.");
         }

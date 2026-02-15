@@ -7,7 +7,7 @@ const client = new Anthropic({
 export interface MemeCaption {
   top: string;
   bottom: string;
-  petY?: "top" | "center" | "bottom";
+  petFaceY?: number;
 }
 
 const SYSTEM_PROMPT = `You are a comedy writer creating classic meme captions for pet photos. You receive a photo of a pet and write a two-part meme: a SETUP line (top) and a PUNCHLINE (bottom) — the kind of meme that gets screenshotted and sent to three friends.
@@ -24,16 +24,15 @@ Return a JSON object with four fields:
   "analysis": "Brief description of what you see",
   "top": "SETUP LINE",
   "bottom": "PUNCHLINE",
-  "petY": "top" | "center" | "bottom"
+  "petFaceY": 0.0 to 1.0
 }
 
-petY: Where is the pet's face/body positioned vertically in the photo?
-- "top" = pet is in the upper third of the image
-- "center" = pet is roughly centered (default)
-- "bottom" = pet is in the lower third of the image
+petFaceY: A decimal from 0.0 (very top of image) to 1.0 (very bottom) indicating where the pet's eyes are vertically. Example: eyes in the upper third = 0.25, centered = 0.5, lower third = 0.75.
 
-TOP LINE (3-10 words): Establishes the situation. Sets up the joke. What the pet is doing, thinking, or observing.
-BOTTOM LINE (3-12 words): The twist, the punchline, the unexpected escalation. This is the laugh line.
+TOP LINE (2-6 words): The setup. Short, punchy, sets up the twist.
+BOTTOM LINE (2-7 words): The punchline. The laugh. The unexpected turn.
+
+Shorter is ALWAYS funnier. Every word must earn its place — if you can cut a word, cut it. Aim for 3-5 words per line. The best memes hit instantly because there's nothing to read, only something to feel.
 
 RULES:
 - First person as the pet ("I" statements)
@@ -48,11 +47,11 @@ RULES:
 - Never mention being an AI, an app, or a translation
 
 Examples of the CALIBER we want (do NOT reuse — write original based on the actual photo):
-- top: "THEY SAID 'BE RIGHT BACK'" / bottom: "THAT WAS 47 MINUTES AGO"
-- top: "I HEARD THE CHEESE DRAWER" / bottom: "FROM TWO FLOORS AWAY"
-- top: "THIS IS MY SPOT" / bottom: "THE FACT THAT YOU BOUGHT THE COUCH IS IRRELEVANT"
-- top: "THEY PUT ME IN THIS SWEATER" / bottom: "I AM FILING THIS UNDER EVIDENCE"
-- top: "THE BABY GETS CARRIED EVERYWHERE" / bottom: "BUT I JUMP ON THE COUNTER AND SUDDENLY IT'S A PROBLEM"`;
+- top: "HEARD THE CHEESE DRAWER" / bottom: "FROM TWO FLOORS AWAY"
+- top: "THIS IS MY SPOT" / bottom: "YOUR RECEIPT IS IRRELEVANT"
+- top: "THEY SAID BE RIGHT BACK" / bottom: "47 MINUTES AGO"
+- top: "ONE TREAT" / bottom: "THE DISRESPECT"
+- top: "NEW DOG AT THE PARK" / bottom: "ABSOLUTELY NOT"`;
 
 export type VoiceStyle =
   | "funny"
@@ -144,6 +143,43 @@ GENDER: NEVER assume gender for any pet, animal, or person. Use "they/them" or g
 GROUNDING CHECK: Before returning, re-read your analysis. Does every detail in the conversation match the photo? If not, fix it.
 
 Never be mean-spirited or crude. Never use emojis or hashtags. Never mention AI.`;
+
+// Comedic angles injected randomly to prevent repetitive themes (hostage, ransom, etc.)
+const COMEDIC_ANGLES = [
+  "The pet has filed a formal complaint and is citing specific incidents",
+  "The pet is running a secret side business from the house",
+  "The pet is gaslighting the owner about something that clearly happened",
+  "The pet has developed a very niche obsession they won't stop talking about",
+  "The pet is reviewing the owner's performance like a Yelp review",
+  "The pet caught the owner doing something embarrassing and has questions",
+  "The pet is dramatically quitting something they were never asked to do",
+  "The pet has been keeping a list of grievances and today they're reading it",
+  "The pet is offering unsolicited life advice with zero self-awareness",
+  "The pet is jealous of a specific object and treating it like a rival",
+  "The pet is negotiating terms and conditions like a lawyer",
+  "The pet is lying about something obvious and doubling down when caught",
+  "The pet is having an existential crisis about something mundane",
+  "The pet overheard a conversation and got the completely wrong idea",
+  "The pet is pretending nothing happened despite clear evidence",
+  "The pet is bragging about an accomplishment that is actually a disaster",
+  "The pet is being passive-aggressive about schedule changes",
+  "The pet is convinced they have a new talent and demanding recognition",
+  "The pet is trying to set boundaries that make no sense",
+  "The pet is writing a breakup text about a household object",
+];
+
+// Track recent angles to avoid back-to-back repeats
+const recentAngles: string[] = [];
+const RECENT_ANGLE_MEMORY = 3;
+
+function pickFreshAngle(): string {
+  const available = COMEDIC_ANGLES.filter((a) => !recentAngles.includes(a));
+  const pool = available.length > 0 ? available : COMEDIC_ANGLES;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  recentAngles.push(pick);
+  if (recentAngles.length > RECENT_ANGLE_MEMORY) recentAngles.shift();
+  return pick;
+}
 
 /** Quick check: does this image contain a pet/animal? */
 export async function detectPet(
@@ -240,10 +276,10 @@ export async function translatePetPhoto(
       throw new Error("Caption fields out of range");
     }
 
-    const validPetY = ["top", "center", "bottom"] as const;
-    const petY = validPetY.includes(parsed.petY) ? parsed.petY : "center";
+    const rawFaceY = parseFloat(parsed.petFaceY);
+    const petFaceY = Number.isFinite(rawFaceY) ? Math.max(0, Math.min(1, rawFaceY)) : 0.4;
 
-    return { top, bottom, petY };
+    return { top, bottom, petFaceY };
   }
 
   // Try once, retry on failure
@@ -267,9 +303,10 @@ export async function generatePetConvo(
     : CONVO_SYSTEM_PROMPT;
 
   const contactName = petName || "Pet";
+  const angle = pickFreshAngle();
   const userText = `Create a text conversation between this pet and their owner. The pet's contact name is "${contactName}".${
     pronouns ? ` Use ${pronouns} pronouns for the pet.` : ""
-  }`;
+  }\n\nComedic angle to explore (adapt to what you see in the photo — skip if it doesn't fit the image): ${angle}`;
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({

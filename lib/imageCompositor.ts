@@ -105,75 +105,39 @@ function fitText(
   return { lines: wrapText(ctx, text, maxWidth), fontSize: minSize };
 }
 
-/** Measure the height needed for a meme text bar (black bar with white text) */
-function measureBarHeight(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  w: number,
-  fontFamily: string
-): { lines: string[]; fontSize: number; barH: number } {
-  const padding = w * 0.06;
-  const maxTextWidth = w - padding * 2;
-  const startSize = Math.round(w * 0.05);
-  const minSize = Math.round(w * 0.03);
-
-  const { lines, fontSize } = fitText(
-    ctx,
-    text.toUpperCase(),
-    maxTextWidth,
-    3,
-    startSize,
-    minSize,
-    fontFamily,
-    false // Anton is not bold — it's already heavy
-  );
-
-  const lineHeight = fontSize * 1.25;
-  const vertPad = fontSize * 0.5;
-  const barH = lines.length * lineHeight + vertPad * 2;
-
-  return { lines, fontSize, barH };
-}
-
-/** Draw a meme text bar (black bg, white centered text) */
-function drawBar(
+/** Draw white text with thick black outline (classic meme style) */
+function drawOutlinedText(
   ctx: CanvasRenderingContext2D,
   lines: string[],
   fontSize: number,
-  x: number,
-  y: number,
-  w: number,
-  barH: number,
-  fontFamily: string
+  centerX: number,
+  baselineY: number
 ): void {
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(x, y, w, barH);
-
   const lineHeight = fontSize * 1.25;
-  const vertPad = fontSize * 0.5;
 
+  ctx.lineJoin = "round";
+  ctx.lineWidth = fontSize * 0.15;
+  ctx.strokeStyle = "#000000";
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = `${fontSize}px ${fontFamily}`;
   ctx.textAlign = "center";
 
   for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(
-      lines[i],
-      x + w / 2,
-      y + vertPad + (i + 1) * lineHeight - fontSize * 0.15
-    );
+    const y = baselineY + i * lineHeight;
+    ctx.strokeText(lines[i], centerX, y);
+    ctx.fillText(lines[i], centerX, y);
   }
 }
 
-/** Crop an image to landscape (16:9) based on where the pet is positioned vertically.
+/** Crop an image to landscape (16:9) centered on the pet's eyes.
  *  - If the image is already landscape-ish (aspect >= 1.4), return it as-is on a canvas.
  *  - Otherwise crop to 16:9, keeping full width and reducing height.
- *  - petY controls where the crop window sits: "top" keeps upper portion, "bottom" keeps lower.
+ *  - petFaceY (0.0-1.0) is where the pet's eyes are vertically; crop centers on that point
+ *    with eyes placed at ~38% from the top for natural framing.
  *  - Never crops more than 60% of original height.
  */
 function cropToLandscape(
   img: HTMLImageElement,
-  petY: "top" | "center" | "bottom" = "center"
+  petFaceY: number = 0.4
 ): HTMLCanvasElement {
   const srcW = img.naturalWidth;
   const srcH = img.naturalHeight;
@@ -200,15 +164,9 @@ function cropToLandscape(
   canvas.height = cropH;
   const ctx = canvas.getContext("2d")!;
 
-  // Position crop window based on pet location
-  let srcY: number;
-  if (petY === "top") {
-    srcY = 0;
-  } else if (petY === "bottom") {
-    srcY = srcH - cropH;
-  } else {
-    srcY = Math.round((srcH - cropH) / 2);
-  }
+  // Position crop window so pet's eyes sit at ~38% from top (natural framing)
+  const eyePixelY = petFaceY * srcH;
+  let srcY = Math.round(eyePixelY - cropH * 0.38);
 
   // Clamp to valid range
   srcY = Math.max(0, Math.min(srcY, srcH - cropH));
@@ -217,43 +175,47 @@ function cropToLandscape(
   return canvas;
 }
 
-/** Core meme renderer: top bar + photo + bottom bar. Returns canvas and dimensions. */
+/** Core meme renderer: photo with outlined text overlaid. Returns canvas. */
 function drawMemeCore(
   img: HTMLImageElement,
   top: string,
   bottom: string,
-  petY?: "top" | "center" | "bottom"
+  petFaceY?: number
 ): HTMLCanvasElement {
   // Crop to landscape for meme format
-  const cropped = cropToLandscape(img, petY);
+  const cropped = cropToLandscape(img, petFaceY);
   const w = cropped.width;
+  const h = cropped.height;
   const fontFamily = '"Anton", Impact, sans-serif';
 
-  // Use a temp canvas to measure text bar heights
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = w;
-  tempCanvas.height = 100;
-  const tempCtx = tempCanvas.getContext("2d")!;
-
-  const topBar = measureBarHeight(tempCtx, top, w, fontFamily);
-  const bottomBar = measureBarHeight(tempCtx, bottom, w, fontFamily);
-
-  const photoH = cropped.height;
-  const totalH = topBar.barH + photoH + bottomBar.barH;
-
+  // Canvas = just the cropped photo
   const canvas = document.createElement("canvas");
   canvas.width = w;
-  canvas.height = totalH;
+  canvas.height = h;
   const ctx = canvas.getContext("2d")!;
 
-  // 1. Top black bar with setup text
-  drawBar(ctx, topBar.lines, topBar.fontSize, 0, 0, w, topBar.barH, fontFamily);
+  // 1. Draw full photo
+  ctx.drawImage(cropped, 0, 0);
 
-  // 2. Cropped pet photo
-  ctx.drawImage(cropped, 0, topBar.barH);
+  // Text sizing — big and bold, classic meme style
+  const padding = w * 0.04;
+  const maxTextWidth = w - padding * 2;
+  const startSize = Math.round(w * 0.08);
+  const minSize = Math.round(w * 0.04);
 
-  // 3. Bottom black bar with punchline
-  drawBar(ctx, bottomBar.lines, bottomBar.fontSize, 0, topBar.barH + photoH, w, bottomBar.barH, fontFamily);
+  // 2. Top text — centered, ~6% from top edge
+  const topFit = fitText(ctx, top.toUpperCase(), maxTextWidth, 2, startSize, minSize, fontFamily, false);
+  ctx.font = `${topFit.fontSize}px ${fontFamily}`;
+  const topBaselineY = h * 0.06 + topFit.fontSize;
+  drawOutlinedText(ctx, topFit.lines, topFit.fontSize, w / 2, topBaselineY);
+
+  // 3. Bottom text — centered, ~6% from bottom edge
+  const bottomFit = fitText(ctx, bottom.toUpperCase(), maxTextWidth, 2, startSize, minSize, fontFamily, false);
+  ctx.font = `${bottomFit.fontSize}px ${fontFamily}`;
+  const bottomLineHeight = bottomFit.fontSize * 1.25;
+  const bottomBlockH = bottomFit.lines.length * bottomLineHeight;
+  const bottomBaselineY = h * 0.94 - bottomBlockH + bottomFit.fontSize;
+  drawOutlinedText(ctx, bottomFit.lines, bottomFit.fontSize, w / 2, bottomBaselineY);
 
   return canvas;
 }
@@ -263,9 +225,9 @@ function drawMeme(
   img: HTMLImageElement,
   top: string,
   bottom: string,
-  petY?: "top" | "center" | "bottom"
+  petFaceY?: number
 ): HTMLCanvasElement {
-  const memeCanvas = drawMemeCore(img, top, bottom, petY);
+  const memeCanvas = drawMemeCore(img, top, bottom, petFaceY);
   const w = memeCanvas.width;
   const memeH = memeCanvas.height;
   const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
@@ -317,7 +279,7 @@ async function drawStory(
   img: HTMLImageElement,
   top: string,
   bottom: string,
-  petY?: "top" | "center" | "bottom"
+  petFaceY?: number
 ): Promise<HTMLCanvasElement> {
   const W = 1080;
   const H = 1920;
@@ -343,7 +305,7 @@ async function drawStory(
   ctx.fillText(`🐾 ${BRAND_NAME}`, W / 2, 100);
 
   // Render the meme core (top bar + cropped photo + bottom bar)
-  const memeCanvas = drawMemeCore(img, top, bottom, petY);
+  const memeCanvas = drawMemeCore(img, top, bottom, petFaceY);
 
   // Scale meme to fit within story canvas with padding
   const memeMaxW = W - 80;
@@ -412,7 +374,7 @@ async function drawStory(
 /** Voice label map for battle mode */
 const VOICE_LABELS: Record<string, { label: string; emoji: string }> = {
   funny: { label: "Silly", emoji: "😂" },
-  passive: { label: "Passive Agg", emoji: "😒" },
+  passive: { label: "Passive", emoji: "😒" },
   genz: { label: "Gen-Z", emoji: "💀" },
   dramatic: { label: "Dramatic Narrator", emoji: "🎬" },
 };
@@ -846,14 +808,14 @@ export async function compositeConvo(
 export async function compositeSubtitles(
   originalDataUrl: string,
   caption: { top: string; bottom: string },
-  petY?: "top" | "center" | "bottom"
+  petFaceY?: number
 ): Promise<CompositeResult> {
   await ensureFontsReady();
 
   const img = await loadImage(originalDataUrl);
 
-  const standardCanvas = drawMeme(img, caption.top, caption.bottom, petY);
-  const storyCanvas = await drawStory(img, caption.top, caption.bottom, petY);
+  const standardCanvas = drawMeme(img, caption.top, caption.bottom, petFaceY);
+  const storyCanvas = await drawStory(img, caption.top, caption.bottom, petFaceY);
 
   return {
     standardDataUrl: standardCanvas.toDataURL("image/png"),
