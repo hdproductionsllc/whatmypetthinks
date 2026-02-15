@@ -120,7 +120,10 @@ export async function POST(request: NextRequest) {
       cleanPronouns
     );
 
-    return NextResponse.json({ caption: memeCaption });
+    return NextResponse.json({
+      caption: { top: memeCaption.top, bottom: memeCaption.bottom },
+      petY: memeCaption.petY,
+    });
   } catch (err) {
     console.error("Translation error:", err);
     return NextResponse.json(

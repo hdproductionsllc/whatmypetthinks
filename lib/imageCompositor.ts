@@ -165,13 +165,68 @@ function drawBar(
   }
 }
 
+/** Crop an image to landscape (16:9) based on where the pet is positioned vertically.
+ *  - If the image is already landscape-ish (aspect >= 1.4), return it as-is on a canvas.
+ *  - Otherwise crop to 16:9, keeping full width and reducing height.
+ *  - petY controls where the crop window sits: "top" keeps upper portion, "bottom" keeps lower.
+ *  - Never crops more than 60% of original height.
+ */
+function cropToLandscape(
+  img: HTMLImageElement,
+  petY: "top" | "center" | "bottom" = "center"
+): HTMLCanvasElement {
+  const srcW = img.naturalWidth;
+  const srcH = img.naturalHeight;
+  const aspect = srcW / srcH;
+
+  const canvas = document.createElement("canvas");
+
+  // Already landscape-ish — no crop needed
+  if (aspect >= 1.4) {
+    canvas.width = srcW;
+    canvas.height = srcH;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    return canvas;
+  }
+
+  // Target 16:9 aspect ratio
+  const targetH = Math.round(srcW / (16 / 9));
+  // Never crop more than 60% of original height
+  const minH = Math.round(srcH * 0.4);
+  const cropH = Math.max(targetH, minH);
+
+  canvas.width = srcW;
+  canvas.height = cropH;
+  const ctx = canvas.getContext("2d")!;
+
+  // Position crop window based on pet location
+  let srcY: number;
+  if (petY === "top") {
+    srcY = 0;
+  } else if (petY === "bottom") {
+    srcY = srcH - cropH;
+  } else {
+    srcY = Math.round((srcH - cropH) / 2);
+  }
+
+  // Clamp to valid range
+  srcY = Math.max(0, Math.min(srcY, srcH - cropH));
+
+  ctx.drawImage(img, 0, srcY, srcW, cropH, 0, 0, srcW, cropH);
+  return canvas;
+}
+
 /** Core meme renderer: top bar + photo + bottom bar. Returns canvas and dimensions. */
 function drawMemeCore(
   img: HTMLImageElement,
   top: string,
-  bottom: string
+  bottom: string,
+  petY?: "top" | "center" | "bottom"
 ): HTMLCanvasElement {
-  const w = img.naturalWidth;
+  // Crop to landscape for meme format
+  const cropped = cropToLandscape(img, petY);
+  const w = cropped.width;
   const fontFamily = '"Anton", Impact, sans-serif';
 
   // Use a temp canvas to measure text bar heights
@@ -183,7 +238,7 @@ function drawMemeCore(
   const topBar = measureBarHeight(tempCtx, top, w, fontFamily);
   const bottomBar = measureBarHeight(tempCtx, bottom, w, fontFamily);
 
-  const photoH = img.naturalHeight;
+  const photoH = cropped.height;
   const totalH = topBar.barH + photoH + bottomBar.barH;
 
   const canvas = document.createElement("canvas");
@@ -194,8 +249,8 @@ function drawMemeCore(
   // 1. Top black bar with setup text
   drawBar(ctx, topBar.lines, topBar.fontSize, 0, 0, w, topBar.barH, fontFamily);
 
-  // 2. Full pet photo, unmodified
-  ctx.drawImage(img, 0, topBar.barH);
+  // 2. Cropped pet photo
+  ctx.drawImage(cropped, 0, topBar.barH);
 
   // 3. Bottom black bar with punchline
   drawBar(ctx, bottomBar.lines, bottomBar.fontSize, 0, topBar.barH + photoH, w, bottomBar.barH, fontFamily);
@@ -207,9 +262,10 @@ function drawMemeCore(
 function drawMeme(
   img: HTMLImageElement,
   top: string,
-  bottom: string
+  bottom: string,
+  petY?: "top" | "center" | "bottom"
 ): HTMLCanvasElement {
-  const memeCanvas = drawMemeCore(img, top, bottom);
+  const memeCanvas = drawMemeCore(img, top, bottom, petY);
   const w = memeCanvas.width;
   const memeH = memeCanvas.height;
   const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
@@ -260,7 +316,8 @@ async function generateQRImage(url: string, size: number): Promise<HTMLImageElem
 async function drawStory(
   img: HTMLImageElement,
   top: string,
-  bottom: string
+  bottom: string,
+  petY?: "top" | "center" | "bottom"
 ): Promise<HTMLCanvasElement> {
   const W = 1080;
   const H = 1920;
@@ -285,8 +342,8 @@ async function drawStory(
   ctx.font = `bold 48px ${displayFont}`;
   ctx.fillText(`🐾 ${BRAND_NAME}`, W / 2, 100);
 
-  // Render the meme core (top bar + photo + bottom bar)
-  const memeCanvas = drawMemeCore(img, top, bottom);
+  // Render the meme core (top bar + cropped photo + bottom bar)
+  const memeCanvas = drawMemeCore(img, top, bottom, petY);
 
   // Scale meme to fit within story canvas with padding
   const memeMaxW = W - 80;
@@ -772,14 +829,15 @@ export async function compositeConvo(
 
 export async function compositeSubtitles(
   originalDataUrl: string,
-  caption: { top: string; bottom: string }
+  caption: { top: string; bottom: string },
+  petY?: "top" | "center" | "bottom"
 ): Promise<CompositeResult> {
   await ensureFontsReady();
 
   const img = await loadImage(originalDataUrl);
 
-  const standardCanvas = drawMeme(img, caption.top, caption.bottom);
-  const storyCanvas = await drawStory(img, caption.top, caption.bottom);
+  const standardCanvas = drawMeme(img, caption.top, caption.bottom, petY);
+  const storyCanvas = await drawStory(img, caption.top, caption.bottom, petY);
 
   return {
     standardDataUrl: standardCanvas.toDataURL("image/png"),

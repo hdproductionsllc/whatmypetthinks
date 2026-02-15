@@ -7,6 +7,7 @@ const client = new Anthropic({
 export interface MemeCaption {
   top: string;
   bottom: string;
+  petY?: "top" | "center" | "bottom";
 }
 
 const SYSTEM_PROMPT = `You are a comedy writer creating classic meme captions for pet photos. You receive a photo of a pet and write a two-part meme: a SETUP line (top) and a PUNCHLINE (bottom) — the kind of meme that gets screenshotted and sent to three friends.
@@ -18,12 +19,18 @@ Before writing ANYTHING, describe what you LITERALLY see:
 - What makes this photo funny or interesting?
 
 STEP 2 — WRITE THE MEME:
-Return a JSON object with three fields:
+Return a JSON object with four fields:
 {
   "analysis": "Brief description of what you see",
   "top": "SETUP LINE",
-  "bottom": "PUNCHLINE"
+  "bottom": "PUNCHLINE",
+  "petY": "top" | "center" | "bottom"
 }
+
+petY: Where is the pet's face/body positioned vertically in the photo?
+- "top" = pet is in the upper third of the image
+- "center" = pet is roughly centered (default)
+- "bottom" = pet is in the lower third of the image
 
 TOP LINE (3-10 words): Establishes the situation. Sets up the joke. What the pet is doing, thinking, or observing.
 BOTTOM LINE (3-12 words): The twist, the punchline, the unexpected escalation. This is the laugh line.
@@ -233,7 +240,10 @@ export async function translatePetPhoto(
       throw new Error("Caption fields out of range");
     }
 
-    return { top, bottom };
+    const validPetY = ["top", "center", "bottom"] as const;
+    const petY = validPetY.includes(parsed.petY) ? parsed.petY : "center";
+
+    return { top, bottom, petY };
   }
 
   // Try once, retry on failure

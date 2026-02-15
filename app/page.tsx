@@ -9,7 +9,8 @@ import PaywallModal from "@/components/PaywallModal";
 import ResultDisplay from "@/components/ResultDisplay";
 import ShareButtons from "@/components/ShareButtons";
 import ExampleCarousel from "@/components/ExampleCarousel";
-import SocialProof from "@/components/SocialProof";
+import LiveFeed from "@/components/LiveFeed";
+import { uploadTranslation } from "@/lib/feedUploader";
 import PersonalizeSection, { loadSavedPersonalization, savePersonalization } from "@/components/PersonalizeSection";
 import RecentHistory, {
   saveToHistory,
@@ -249,7 +250,7 @@ export default function Home() {
         trackEvent("translation_received", { voice_style: voiceToUse });
 
         try {
-          composited = await compositeSubtitles(imageData.originalDataUrl, mc);
+          composited = await compositeSubtitles(imageData.originalDataUrl, mc, data.petY);
         } catch {
           throw new Error("Couldn't create the meme image. Try a different photo.");
         }
@@ -271,6 +272,9 @@ export default function Home() {
         caption: displayCaption,
       });
       setHistoryKey((k) => k + 1);
+
+      // Fire-and-forget upload to Supabase for the live feed
+      uploadTranslation(composited.standardDataUrl, format, voiceToUse, nameToUse || undefined);
 
       setAppState("result");
       playMessageSound();
@@ -414,17 +418,21 @@ export default function Home() {
 
       {/* Name input for first-timers — show above translate button */}
       {appState === "photo_selected" && isFirstTime && (
-        <div className="px-4 pt-2 pb-1">
-          <label className="mb-1.5 block text-center text-sm font-semibold text-charcoal">
-            What&apos;s your pet&apos;s name?
+        <div className="mx-4 mt-3 mb-1 rounded-2xl bg-amber/10 px-5 py-5 animate-fade-up">
+          <label className="mb-2 block text-center text-lg font-bold text-charcoal">
+            What&apos;s your pet&apos;s name? 🐾
           </label>
           <input
             type="text"
             value={petName}
             onChange={(e) => setPetName(e.target.value.slice(0, 20))}
             placeholder="e.g. Biscuit, Luna, Mr. Whiskers"
-            className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-center text-base outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
+            autoFocus
+            className="w-full rounded-xl border-2 border-coral/30 bg-white px-4 py-3.5 text-center text-lg font-medium outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
           />
+          <p className="mt-2 text-center text-xs text-charcoal/50">
+            Makes the translation way more personal
+          </p>
         </div>
       )}
 
@@ -507,10 +515,10 @@ export default function Home() {
       {/* Spacer when no result */}
       {!showingResult && !showingLoading && <div className="mt-2" />}
 
-      {/* Social proof (idle) or Recent history (has translations) */}
+      {/* Live feed (idle) or Recent history (has translations) */}
       <div className="mt-auto">
         {appState === "idle" ? (
-          <SocialProof />
+          <LiveFeed />
         ) : (
           <RecentHistory key={historyKey} onRestore={handleRestore} />
         )}
