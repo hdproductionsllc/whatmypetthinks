@@ -17,18 +17,17 @@ import RecentHistory, {
   type HistoryItem,
 } from "@/components/RecentHistory";
 import { processImageFile } from "@/lib/imageUtils";
-import { compositeSubtitles, compositeConvo, compositeBattle, type BattleEntry } from "@/lib/imageCompositor";
+import { compositeSubtitles, compositeConvo } from "@/lib/imageCompositor";
 import type { ConvoMessage } from "@/lib/anthropic";
 import {
   hasCredits,
-  getAvailableCredits,
   useCredit,
   earnShareCredit,
 } from "@/lib/usageTracker";
 import { trackEvent } from "@/lib/analytics";
 import type { VoiceStyle } from "@/lib/anthropic";
 
-type AppState = "idle" | "photo_selected" | "scanning" | "translating" | "battle_translating" | "result" | "battle_result" | "error";
+type AppState = "idle" | "photo_selected" | "scanning" | "translating" | "result" | "error";
 
 const ALL_VOICES: VoiceStyle[] = ["funny", "dramatic", "genz", "passive"];
 
@@ -46,16 +45,6 @@ const VOICE_SUGGESTIONS: Record<VoiceStyle, VoiceStyle> = {
   dramatic: "passive",
 };
 
-/** Pick n random voices from the list */
-function pickRandomVoices(n: number, exclude?: VoiceStyle): VoiceStyle[] {
-  const pool = exclude ? ALL_VOICES.filter(v => v !== exclude) : [...ALL_VOICES];
-  const picked: VoiceStyle[] = [];
-  while (picked.length < n && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length);
-    picked.push(pool.splice(idx, 1)[0]);
-  }
-  return picked;
-}
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>("idle");
@@ -77,8 +66,6 @@ export default function Home() {
   const [historyKey, setHistoryKey] = useState(0);
   const [creditRefresh, setCreditRefresh] = useState(0);
   const [shareToast, setShareToast] = useState<string | null>(null);
-  const [battleImage, setBattleImage] = useState("");
-  const [battleEntries, setBattleEntries] = useState<BattleEntry[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<"caption" | "convo">("convo");
   const [convoMessages, setConvoMessages] = useState<ConvoMessage[]>([]);
   const [petName, setPetName] = useState("");
@@ -142,8 +129,6 @@ export default function Home() {
     setCaption("");
     setStandardImage("");
     setStoryImage("");
-    setBattleImage("");
-    setBattleEntries([]);
     setConvoMessages([]);
     setError("");
     setAppState("idle");
@@ -157,8 +142,6 @@ export default function Home() {
     setCaption("");
     setStandardImage("");
     setStoryImage("");
-    setBattleImage("");
-    setBattleEntries([]);
     setConvoMessages([]);
     setError("");
     setAppState("idle");
@@ -300,70 +283,6 @@ export default function Home() {
     }
   }, [imageData, selectedVoice, selectedFormat, petName, petPronouns, refreshCredits, scanForPets]);
 
-  const doBattle = useCallback(async () => {
-    if (!imageData) return;
-
-    // Battle costs 3 credits (one per voice)
-    if (getAvailableCredits() < 3) {
-      trackEvent("paywall_shown", { reason: "no_credits" });
-      setPaywallOpen(true);
-      return;
-    }
-
-    // Pet detection pre-check
-    const hasPet = await scanForPets();
-    if (!hasPet) return;
-
-    trackEvent("battle_tapped");
-    setAppState("battle_translating");
-    setError("");
-
-    try {
-      const voices = pickRandomVoices(3);
-
-      // Fire 3 API calls in parallel
-      const results = await Promise.all(
-        voices.map(async (voice) => {
-          const res = await fetch("/api/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              imageBase64: imageData.base64,
-              mediaType: imageData.mediaType,
-              voiceStyle: voice,
-              petName: petName || undefined,
-              pronouns: petPronouns || undefined,
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Translation failed");
-          return { voiceId: voice, caption: data.caption };
-        })
-      );
-
-      setBattleEntries(results);
-
-      // Composite battle image using full-resolution original
-      const battleDataUrl = await compositeBattle(imageData.originalDataUrl, results);
-      setBattleImage(battleDataUrl);
-
-      // Use 3 credits (one per voice)
-      useCredit();
-      useCredit();
-      useCredit();
-      refreshCredits();
-
-      setAppState("battle_result");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Battle failed. Please try again!"
-      );
-      setAppState("error");
-    }
-  }, [imageData, petName, petPronouns, refreshCredits, scanForPets]);
-
   const handleVoiceSelect = useCallback((voice: VoiceStyle) => {
     trackEvent("voice_style_selected", { voice_style: voice });
     setSelectedVoice(voice);
@@ -436,8 +355,8 @@ export default function Home() {
     doTranslate(suggestedVoice);
   }, [suggestedVoice, doTranslate]);
 
-  const showingResult = appState === "result" || appState === "battle_result";
-  const showingLoading = appState === "translating" || appState === "battle_translating" || appState === "scanning";
+  const showingResult = appState === "result";
+  const showingLoading = appState === "translating" || appState === "scanning";
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
@@ -508,27 +427,14 @@ export default function Home() {
         />
       )}
 
-      {/* Translate + Battle buttons — show when photo selected */}
+      {/* Translate button — show when photo selected */}
       {appState === "photo_selected" && (
-        <>
-          <TranslateButton
-            onClick={() => doTranslate()}
-            isLoading={false}
-            disabled={!imageData || isOffline}
-            label={isFirstTime ? "What's your pet thinking? 🐾" : undefined}
-          />
-          {!isFirstTime && (
-            <div className="px-4 pb-2">
-              <button
-                onClick={doBattle}
-                disabled={!imageData || isOffline}
-                className="btn-press w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-50 min-h-[48px]"
-              >
-                Caption Battle — 3 Voices, 1 Photo
-              </button>
-            </div>
-          )}
-        </>
+        <TranslateButton
+          onClick={() => doTranslate()}
+          isLoading={false}
+          disabled={!imageData || isOffline}
+          label={isFirstTime ? "What's your pet thinking? 🐾" : undefined}
+        />
       )}
 
       {/* Scanning state */}
@@ -552,18 +458,6 @@ export default function Home() {
           isLoading={true}
           disabled={true}
         />
-      )}
-
-      {/* Loading state — battle */}
-      {appState === "battle_translating" && (
-        <div className="px-4 mt-4">
-          <button
-            disabled
-            className="w-full rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg opacity-80 animate-pulse min-h-[48px]"
-          >
-            Battling voices...
-          </button>
-        </div>
       )}
 
       {/* Error state */}
@@ -636,27 +530,6 @@ export default function Home() {
             onDifferentCaption={imageData ? handleDifferentCaption : undefined}
             onTryVoice={imageData ? handleTryVoice : undefined}
             suggestedVoiceName={suggestedVoiceName}
-            onNewPhoto={handleNewPhoto}
-          />
-        </>
-      )}
-
-      {/* Battle result */}
-      {appState === "battle_result" && battleImage && (
-        <>
-          <div className="mt-1 px-2">
-            <img
-              src={battleImage}
-              alt="Caption Battle results"
-              className="w-full rounded-2xl shadow-lg animate-fade-up"
-            />
-          </div>
-          <ShareButtons
-            standardImageUrl={battleImage}
-            storyImageUrl={battleImage}
-            caption={`Caption Battle! Which voice wins? 🐾\n${battleEntries.map(e => `"${e.caption}"`).join("\n")}`}
-            voiceStyle="battle"
-            onShareComplete={handleShareComplete}
             onNewPhoto={handleNewPhoto}
           />
         </>
