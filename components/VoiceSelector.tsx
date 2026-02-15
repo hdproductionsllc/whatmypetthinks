@@ -3,13 +3,10 @@
 import type { VoiceStyle } from "@/lib/anthropic";
 
 const VOICES: { id: VoiceStyle; label: string; emoji: string }[] = [
-  { id: "funny", label: "Funny", emoji: "😂" },
-  { id: "dramatic", label: "Narrator", emoji: "🎬" },
-  { id: "genz", label: "Gen-Z", emoji: "💀" },
-  { id: "shakespeare", label: "Shakespeare", emoji: "🎭" },
+  { id: "funny", label: "Silly", emoji: "😂" },
   { id: "passive", label: "Passive Agg", emoji: "😒" },
-  { id: "therapist", label: "Therapist", emoji: "🧠" },
-  { id: "telenovela", label: "Telenovela", emoji: "🌹" },
+  { id: "genz", label: "Gen-Z", emoji: "💀" },
+  { id: "dramatic", label: "Dramatic Narrator", emoji: "🎬" },
 ];
 
 interface Props {

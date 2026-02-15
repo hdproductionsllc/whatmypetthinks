@@ -30,7 +30,7 @@ import type { VoiceStyle } from "@/lib/anthropic";
 
 type AppState = "idle" | "photo_selected" | "scanning" | "translating" | "battle_translating" | "result" | "battle_result" | "error";
 
-const ALL_VOICES: VoiceStyle[] = ["funny", "dramatic", "genz", "shakespeare", "passive", "therapist", "telenovela"];
+const ALL_VOICES: VoiceStyle[] = ["funny", "dramatic", "genz", "passive"];
 
 /** Pick n random voices from the list */
 function pickRandomVoices(n: number, exclude?: VoiceStyle): VoiceStyle[] {

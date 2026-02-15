@@ -353,13 +353,10 @@ async function drawStory(
 
 /** Voice label map for battle mode */
 const VOICE_LABELS: Record<string, { label: string; emoji: string }> = {
-  funny: { label: "Funny", emoji: "😂" },
-  dramatic: { label: "Narrator", emoji: "🎬" },
-  genz: { label: "Gen-Z", emoji: "💀" },
-  shakespeare: { label: "Shakespeare", emoji: "🎭" },
+  funny: { label: "Silly", emoji: "😂" },
   passive: { label: "Passive Agg", emoji: "😒" },
-  therapist: { label: "Therapist", emoji: "🧠" },
-  telenovela: { label: "Telenovela", emoji: "🌹" },
+  genz: { label: "Gen-Z", emoji: "💀" },
+  dramatic: { label: "Dramatic Narrator", emoji: "🎬" },
 };
 
 export interface BattleEntry {

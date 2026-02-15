@@ -37,25 +37,16 @@ export type VoiceStyle =
   | "funny"
   | "dramatic"
   | "genz"
-  | "shakespeare"
-  | "passive"
-  | "therapist"
-  | "telenovela";
+  | "passive";
 
 const VOICE_MODIFIERS: Record<VoiceStyle, string> = {
   funny: "", // base prompt handles comedy
   passive:
     "This pet is deeply disappointed in their human. Weaponized politeness. 'I'm not mad, I'm just disappointed.' Guilt trips delivered with surgical precision. The pet has been keeping score and they have RECEIPTS. Every sentence drips with restrained hurt.",
-  shakespeare:
-    "Write in iambic-ish Shakespearean English. Thee, thou, forsooth, prithee. Treat every mundane moment like the climax of Hamlet. The food bowl being empty is a tragedy for the ages. A closed door is betrayal most foul.",
   genz:
     "Peak internet speak — but actually funny, not just slang. 'no cap,' 'fr fr,' 'lowkey,' 'slay,' 'its giving,' 'the audacity,' 'main character energy,' 'living rent free.' The pet is chronically online and treats their life like a viral moment. Use the language to amplify the comedy, not replace it.",
   dramatic:
     "David Attenborough narrating a BBC Earth documentary, but about this completely mundane pet moment. Full gravitas. Scientific observation. 'And here, in the wild expanses of the living room...' The gap between the epic tone and the trivial subject IS the joke.",
-  therapist:
-    "The pet speaks with the calm of an overly understanding therapist — but they're processing their OWN emotions. Validating their own feelings. Working through attachment issues about the treat jar. 'I'm noticing some big feelings coming up for me right now.' Clinical detachment masking genuine distress.",
-  telenovela:
-    "MAXIMUM drama. Latin soap opera energy. Every moment is life or death, betrayal, forbidden love. Someone has been DECEIVED. Hearts are SHATTERED. The treat bag is empty and this is the greatest tragedy of our generation. Dramatic gasps. Passionate declarations. Over-the-top in every possible way.",
 };
 
 export interface ConvoMessage {

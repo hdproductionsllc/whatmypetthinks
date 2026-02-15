@@ -38,10 +38,7 @@ const VALID_VOICES: VoiceStyle[] = [
   "funny",
   "dramatic",
   "genz",
-  "shakespeare",
   "passive",
-  "therapist",
-  "telenovela",
 ];
 
 // ~5MB in base64 is ~6.67MB string
