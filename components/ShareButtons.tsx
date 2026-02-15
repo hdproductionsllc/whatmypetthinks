@@ -44,6 +44,19 @@ export default function ShareButtons({
   const webShareAvailable = canUseWebShare();
   const canEarnCredit = canEarnShareCredit();
 
+  const shareText = isConvo
+    ? "find out what your pet would text you 😂 whatmypetthinks.com #WhatMyPetThinks"
+    : "find out what your pet is really thinking 😂 whatmypetthinks.com #WhatMyPetThinks";
+
+  const copyShareText = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
@@ -82,47 +95,52 @@ export default function ShareButtons({
       }
     } else {
       downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
-      showToast("Saved! 🐾");
+      const copied = await copyShareText();
+      showToast(copied ? "Saved! Caption copied 📋" : "Saved! 🐾");
       if (onShareComplete) onShareComplete();
     }
   };
 
-  const handleInstagram = () => {
+  const handleInstagram = async () => {
     trackEvent("share_tapped", { platform: "instagram" });
     downloadImage(storyImageUrl, generateFilename(voiceStyle, true, isConvo));
-    showToast("Image saved! Paste it in Instagram.");
+    await copyShareText();
+    showToast("Image saved! Caption copied 📋");
     setTimeout(() => openInstagram(), 800);
     if (onShareComplete) onShareComplete();
   };
 
-  const handleTikTok = () => {
+  const handleTikTok = async () => {
     trackEvent("share_tapped", { platform: "tiktok" });
     downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
-    showToast("Image saved! Paste it in TikTok.");
+    await copyShareText();
+    showToast("Image saved! Caption copied 📋");
     setTimeout(() => openTikTok(), 800);
     if (onShareComplete) onShareComplete();
   };
 
-  const handleX = () => {
+  const handleX = async () => {
     trackEvent("share_tapped", { platform: "x" });
     downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
-    showToast("Image saved! Attach it to your tweet.");
+    await copyShareText();
+    showToast("Image saved! Caption copied 📋");
     setTimeout(() => shareToX(caption, isConvo), 800);
     if (onShareComplete) onShareComplete();
   };
 
-  const handleFacebook = () => {
+  const handleFacebook = async () => {
     trackEvent("share_tapped", { platform: "facebook" });
     downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
-    showToast("Image saved! Attach it to your post.");
+    await copyShareText();
+    showToast("Image saved! Caption copied 📋");
     setTimeout(() => shareToFacebook(), 800);
     if (onShareComplete) onShareComplete();
   };
 
   const handleCopy = async () => {
     trackEvent("share_tapped", { platform: "copy_link" });
-    const copied = await copyLinkToClipboard();
-    showToast(copied ? "Link copied! 🐾" : "Could not copy link");
+    await navigator.clipboard.writeText(shareText).catch(() => {});
+    showToast("Caption copied to clipboard! 📋");
     if (onShareComplete) onShareComplete();
   };
 
@@ -265,7 +283,7 @@ export default function ShareButtons({
       {/* Toast */}
       {toast && (
         <div className="toast-enter mt-3 flex justify-center">
-          <div className="rounded-full bg-charcoal px-4 py-2 text-sm font-semibold text-white shadow-lg">
+          <div className="rounded-full bg-teal px-4 py-2 text-sm font-semibold text-white shadow-lg">
             {toast}
           </div>
         </div>
