@@ -12,12 +12,40 @@ const VOICES: { id: VoiceStyle; label: string; emoji: string }[] = [
 interface Props {
   selected: VoiceStyle;
   onSelect: (voice: VoiceStyle) => void;
+  format?: "caption" | "convo";
+  onFormatChange?: (format: "caption" | "convo") => void;
 }
 
-export default function VoiceSelector({ selected, onSelect }: Props) {
+export default function VoiceSelector({ selected, onSelect, format, onFormatChange }: Props) {
   return (
     <div className="px-3 py-1.5">
-      <p className="mb-1.5 text-sm font-semibold text-charcoal-light">Voice style</p>
+      <div className="mb-1.5 flex items-center justify-between">
+        <p className="text-sm font-semibold text-charcoal-light">Voice style</p>
+        {format && onFormatChange && (
+          <div className="flex rounded-full bg-gray-100 p-0.5">
+            <button
+              onClick={() => onFormatChange("caption")}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                format === "caption"
+                  ? "bg-coral text-white shadow-sm"
+                  : "text-charcoal-light"
+              }`}
+            >
+              Caption
+            </button>
+            <button
+              onClick={() => onFormatChange("convo")}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                format === "convo"
+                  ? "bg-coral text-white shadow-sm"
+                  : "text-charcoal-light"
+              }`}
+            >
+              Text Convo
+            </button>
+          </div>
+        )}
+      </div>
       <div className="flex flex-wrap gap-1.5">
         {VOICES.map((voice) => {
           const isActive = selected === voice.id;

@@ -498,37 +498,13 @@ export default function Home() {
         />
       )}
 
-      {/* Format selector — show when photo selected or in result state (returning users only) */}
-      {(appState === "photo_selected" || appState === "result") && !isFirstTime && (
-        <div className="flex justify-center gap-1 px-4 py-2">
-          <button
-            onClick={() => setSelectedFormat("caption")}
-            className={`rounded-full px-5 py-2 text-sm font-bold transition ${
-              selectedFormat === "caption"
-                ? "bg-coral text-white"
-                : "bg-gray-100 text-charcoal"
-            }`}
-          >
-            Caption
-          </button>
-          <button
-            onClick={() => setSelectedFormat("convo")}
-            className={`rounded-full px-5 py-2 text-sm font-bold transition ${
-              selectedFormat === "convo"
-                ? "bg-coral text-white"
-                : "bg-gray-100 text-charcoal"
-            }`}
-          >
-            Text Convo
-          </button>
-        </div>
-      )}
-
-      {/* Voice selector — show when photo selected, translating, OR in result state (returning users only) */}
+      {/* Voice & format selector — show when photo selected, translating, OR in result state (returning users only) */}
       {(appState === "photo_selected" || appState === "translating" || appState === "result") && !isFirstTime && (
         <VoiceSelector
           selected={selectedVoice}
           onSelect={handleVoiceSelect}
+          format={selectedFormat}
+          onFormatChange={setSelectedFormat}
         />
       )}
 

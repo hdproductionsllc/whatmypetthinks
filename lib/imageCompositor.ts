@@ -518,7 +518,7 @@ function drawConvo(
   const fontFamily = '"Nunito", "Segoe UI", Arial, sans-serif';
 
   // === TOP SECTION: Dark background with pet photo ===
-  const headerH = 640;
+  const headerH = 700;
   const darkGrad = ctx.createLinearGradient(0, 0, 0, headerH);
   darkGrad.addColorStop(0, "#1A1A2E");
   darkGrad.addColorStop(1, "#16213E");
@@ -548,9 +548,9 @@ function drawConvo(
   ctx.globalAlpha = 1;
 
   // Circular pet photo with shadow
-  const photoSize = 400;
+  const photoSize = 480;
   const photoX = (W - photoSize) / 2;
-  const photoY = 80;
+  const photoY = 60;
   const photoCenterX = W / 2;
   const photoCenterY = photoY + photoSize / 2;
 
@@ -589,28 +589,29 @@ function drawConvo(
   // Pet name below photo
   ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "center";
-  ctx.font = `bold 42px ${fontFamily}`;
-  ctx.fillText(petName, W / 2, photoY + photoSize + 50);
+  ctx.font = `bold 48px ${fontFamily}`;
+  ctx.fillText(petName, W / 2, photoY + photoSize + 55);
 
   // "iMessage" label
   ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-  ctx.font = `24px ${fontFamily}`;
-  ctx.fillText("iMessage", W / 2, photoY + photoSize + 85);
+  ctx.font = `26px ${fontFamily}`;
+  ctx.fillText("iMessage", W / 2, photoY + photoSize + 92);
 
   // === BOTTOM SECTION: White background ===
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, headerH, W, H - headerH);
 
   // === MESSAGE BUBBLES — top-aligned ===
-  const msgAreaTop = headerH + 24;
-  const msgMaxWidth = Math.round(W * 0.63);
-  const bubblePadH = 24;
-  const bubblePadV = 14;
-  const bubbleRadius = 18;
-  const fontSize = 28;
+  const msgAreaTop = headerH + 30;
+  const msgMaxWidth = Math.round(W * 0.72);
+  const bubblePadH = 30;
+  const bubblePadV = 18;
+  const bubbleRadius = 22;
+  const fontSize = 36;
   const lineHeight = fontSize * 1.35;
-  const sameSenderGap = 6;
-  const diffSenderGap = 16;
+  const sameSenderGap = 10;
+  const diffSenderGap = 24;
+  const bubbleMargin = 32;
 
   ctx.font = `${fontSize}px ${fontFamily}`;
 
@@ -633,7 +634,7 @@ function drawConvo(
     }
 
     const isOwner = msg.sender === "owner";
-    const bubbleX = isOwner ? W - 24 - bubbleW : 24;
+    const bubbleX = isOwner ? W - bubbleMargin - bubbleW : bubbleMargin;
 
     ctx.fillStyle = isOwner ? "#007AFF" : "#E9E9EB";
     ctx.beginPath();
@@ -661,9 +662,9 @@ function drawConvo(
   // "Delivered" text after last owner message
   if (lastOwnerBubbleBottomY > 0) {
     ctx.fillStyle = "#8E8E93";
-    ctx.font = `18px ${fontFamily}`;
+    ctx.font = `22px ${fontFamily}`;
     ctx.textAlign = "right";
-    ctx.fillText("Delivered", W - 28, lastOwnerBubbleBottomY + 22);
+    ctx.fillText("Delivered", W - bubbleMargin, lastOwnerBubbleBottomY + 28);
   }
 
   // --- 4. Brand footer (1820-1920px) ---
