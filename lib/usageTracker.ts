@@ -1,10 +1,7 @@
 "use client";
 
-const FREE_USES_PER_DAY = 10;
+const FREE_USES_PER_DAY = 5;
 const MAX_SHARE_CREDITS_PER_DAY = 3;
-
-// Premium voices — everything except "funny"
-const PREMIUM_VOICES = new Set(["dramatic", "genz", "shakespeare", "passive", "therapist", "telenovela"]);
 
 // Storage keys
 const WAITLIST_KEY = "petsubtitles_waitlist_email";
@@ -29,48 +26,24 @@ function setNum(key: string, val: number): void {
   localStorage.setItem(key, String(val));
 }
 
-// --- Free tier (Funny voice) ---
+// --- Credits ---
 
-/** How many free uses remain today */
-export function getFreeUsesRemaining(): number {
-  return Math.max(0, FREE_USES_PER_DAY - getNum(storageKey("free_used")));
+/** How many credits are available right now */
+export function getAvailableCredits(): number {
+  const used = getNum(storageKey("free_used"));
+  const earned = getShareCreditsToday();
+  return Math.max(0, FREE_USES_PER_DAY - used + earned);
 }
 
-/** Whether the user has free credits for the Funny voice */
-export function hasFreeCredits(): boolean {
-  return getFreeUsesRemaining() > 0;
+/** Whether the user can translate */
+export function hasCredits(): boolean {
+  return getAvailableCredits() > 0;
 }
 
-/** Consume one free credit */
-export function useFreeCredit(): void {
+/** Consume one credit */
+export function useCredit(): void {
   const key = storageKey("free_used");
   setNum(key, getNum(key) + 1);
-}
-
-// --- Premium tier (all other voices) ---
-
-/** Whether a voice requires premium credits */
-export function isPremiumVoice(voiceId: string): boolean {
-  return PREMIUM_VOICES.has(voiceId);
-}
-
-/** Get current premium credits (earned via sharing) */
-export function getPremiumCredits(): number {
-  return getNum(storageKey("premium_credits"));
-}
-
-/** Whether the user has premium credits */
-export function hasPremiumCredits(): boolean {
-  return getPremiumCredits() > 0;
-}
-
-/** Consume one premium credit */
-export function usePremiumCredit(): void {
-  const key = storageKey("premium_credits");
-  const current = getNum(key);
-  if (current > 0) {
-    setNum(key, current - 1);
-  }
 }
 
 // --- Share-to-unlock ---
@@ -90,35 +63,12 @@ export function getShareCreditsRemaining(): number {
   return Math.max(0, MAX_SHARE_CREDITS_PER_DAY - getShareCreditsToday());
 }
 
-/** Earn a premium credit by sharing. Returns true if credit was earned. */
+/** Earn a credit by sharing. Returns true if credit was earned. */
 export function earnShareCredit(): boolean {
   if (!canEarnShareCredit()) return false;
   const sharesKey = storageKey("shares");
   setNum(sharesKey, getShareCreditsToday() + 1);
-  const creditsKey = storageKey("premium_credits");
-  setNum(creditsKey, getNum(creditsKey) + 1);
   return true;
-}
-
-// --- Backward-compatible wrappers ---
-
-/** Total credits available (free + premium). Used by Header badge. */
-export function getAvailableCredits(): number {
-  return getFreeUsesRemaining() + getPremiumCredits();
-}
-
-/** Whether the user can translate with any voice */
-export function hasCredits(): boolean {
-  return hasFreeCredits() || hasPremiumCredits();
-}
-
-/** Use one credit — prefers free, falls back to premium */
-export function useCredit(): void {
-  if (hasFreeCredits()) {
-    useFreeCredit();
-  } else {
-    usePremiumCredit();
-  }
 }
 
 // --- Waitlist ---
