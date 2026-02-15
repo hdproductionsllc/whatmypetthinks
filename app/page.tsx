@@ -71,8 +71,6 @@ export default function Home() {
   const [petName, setPetName] = useState("");
   const [petPronouns, setPetPronouns] = useState("");
   const [isFirstTime, setIsFirstTime] = useState(true);
-  const [showNameInput, setShowNameInput] = useState(false);
-  const [nameInputValue, setNameInputValue] = useState("");
   const [usedVoices, setUsedVoices] = useState<VoiceStyle[]>([]);
 
   const photoCaptureRef = useRef<PhotoCaptureHandle>(null);
@@ -265,9 +263,10 @@ export default function Home() {
       // Track used voice for smart suggestions
       setUsedVoices((prev) => prev.includes(voiceToUse) ? prev : [...prev, voiceToUse]);
 
-      // Mark first translation complete
+      // Mark first translation complete + save name if provided
       if (!localStorage.getItem("wmpt_has_translated")) {
         localStorage.setItem("wmpt_has_translated", "true");
+        if (nameToUse) savePersonalization(nameToUse, petPronouns);
         trackEvent("first_translation");
       }
 
@@ -329,16 +328,6 @@ export default function Home() {
     trackEvent("different_caption_tapped", { format: selectedFormat });
     doTranslate();
   }, [doTranslate, selectedFormat]);
-
-  /** First-time user adds pet name on result screen — save and re-translate */
-  const handleFirstTimeNameSubmit = useCallback(() => {
-    const name = nameInputValue.trim().slice(0, 20);
-    if (!name) return;
-    setPetName(name);
-    savePersonalization(name, petPronouns);
-    setShowNameInput(false);
-    doTranslate(undefined, name);
-  }, [nameInputValue, petPronouns, doTranslate]);
 
   // Smart voice suggestion: pick next untried voice, or use the suggestion map
   const suggestedVoice: VoiceStyle = (() => {
@@ -427,6 +416,22 @@ export default function Home() {
         />
       )}
 
+      {/* Name input for first-timers — show above translate button */}
+      {appState === "photo_selected" && isFirstTime && (
+        <div className="px-4 pt-2 pb-1">
+          <label className="mb-1.5 block text-center text-sm font-semibold text-charcoal">
+            What&apos;s your pet&apos;s name?
+          </label>
+          <input
+            type="text"
+            value={petName}
+            onChange={(e) => setPetName(e.target.value.slice(0, 20))}
+            placeholder="e.g. Biscuit, Luna, Mr. Whiskers"
+            className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-center text-base outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/20"
+          />
+        </div>
+      )}
+
       {/* Translate button — show when photo selected */}
       {appState === "photo_selected" && (
         <TranslateButton
@@ -480,38 +485,7 @@ export default function Home() {
             <ResultDisplay imageDataUrl={standardImage} caption={caption} hideCaption={selectedFormat === "convo"} />
           </div>
 
-          {/* Inline name prompt — interactive for first-timers, static for returning users */}
-          {!petName && isFirstTime && (
-            <div className="mx-3 mt-1.5 rounded-xl bg-amber/5 px-3 py-2 text-center animate-fade-up">
-              {showNameInput ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nameInputValue}
-                    onChange={(e) => setNameInputValue(e.target.value.slice(0, 20))}
-                    onKeyDown={(e) => e.key === "Enter" && handleFirstTimeNameSubmit()}
-                    placeholder="e.g. Biscuit"
-                    autoFocus
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
-                  />
-                  <button
-                    onClick={handleFirstTimeNameSubmit}
-                    disabled={!nameInputValue.trim()}
-                    className="rounded-xl bg-coral px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-                  >
-                    Go
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowNameInput(true)}
-                  className="text-sm font-semibold text-coral hover:underline"
-                >
-                  Add your pet&apos;s name for a personalized conversation &rarr;
-                </button>
-              )}
-            </div>
-          )}
+          {/* Name hint for returning users who haven't set a name */}
           {!petName && !isFirstTime && (
             <div className="mx-3 mt-1.5 rounded-xl bg-amber/5 px-3 py-1.5 text-center">
               <p className="text-xs text-charcoal-light">

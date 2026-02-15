@@ -153,20 +153,14 @@ export default function ShareButtons({
         </p>
       )}
 
-      {/* Mobile: two share buttons via Web Share API */}
+      {/* Mobile: share button via Web Share API */}
       {webShareAvailable && (
-        <div className="mb-1.5 flex gap-2">
+        <div className="mb-1.5">
           <button
             onClick={handleShare}
-            className="btn-press flex-1 rounded-2xl bg-coral px-4 py-3 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[48px]"
+            className="btn-press w-full rounded-2xl bg-coral px-4 py-3 text-base font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[48px]"
           >
             Share
-          </button>
-          <button
-            onClick={handleShareStory}
-            className="btn-press flex-1 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 text-base font-bold text-white shadow-lg transition hover:opacity-90 min-h-[48px]"
-          >
-            Share to Story
           </button>
         </div>
       )}
