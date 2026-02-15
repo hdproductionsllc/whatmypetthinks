@@ -4,9 +4,9 @@ import type { VoiceStyle } from "@/lib/anthropic";
 
 const VOICES: { id: VoiceStyle; label: string; emoji: string }[] = [
   { id: "funny", label: "Silly", emoji: "😂" },
-  { id: "passive", label: "Passive", emoji: "😒" },
+  { id: "passive", label: "Passive Agg", emoji: "😒" },
   { id: "genz", label: "Gen-Z", emoji: "💀" },
-  { id: "dramatic", label: "Dramatic", emoji: "🎬" },
+  { id: "dramatic", label: "Dramatic Narr", emoji: "🎬" },
 ];
 
 interface Props {
