@@ -30,10 +30,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Checkout session error:", message);
+    console.error("Checkout session error:", err);
     return NextResponse.json(
-      { error: "Could not start checkout. Please try again.", debug: message, appUrl: (process.env.NEXT_PUBLIC_APP_URL || "").length },
+      { error: "Could not start checkout. Please try again." },
       { status: 500 }
     );
   }

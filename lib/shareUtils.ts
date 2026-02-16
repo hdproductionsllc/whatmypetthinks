@@ -1,7 +1,9 @@
 "use client";
 
+/** Only use Web Share API on mobile/tablet — desktop should show platform buttons */
 export function canUseWebShare(): boolean {
-  return typeof navigator !== "undefined" && !!navigator.share;
+  if (typeof navigator === "undefined" || !navigator.share) return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 /** Generate descriptive filename: whatmypetthinks-funny-20260213-143022.png */
