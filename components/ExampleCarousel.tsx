@@ -6,13 +6,14 @@ import { CAROUSEL_EXAMPLES, type CarouselExample } from "@/lib/sampleData";
 interface Props {
   onTryIt: () => void;
   onRestore?: () => void;
+  isPro?: boolean;
 }
 
 const MSG_DELAY = 700;
 const PAUSE_AFTER_DONE = 3000;
 const CAPTION_HOLD = 4000;
 
-export default function ExampleCarousel({ onTryIt, onRestore }: Props) {
+export default function ExampleCarousel({ onTryIt, onRestore, isPro }: Props) {
   const [exIndex, setExIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
   const [captionVisible, setCaptionVisible] = useState(false);
@@ -113,11 +114,11 @@ export default function ExampleCarousel({ onTryIt, onRestore }: Props) {
         onClick={onTryIt}
         className="btn-press mt-4 w-full rounded-2xl bg-coral px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-coral-dark min-h-[56px]"
       >
-        Try It Free
+        {isPro ? "Translate a Photo" : "Try It Free"}
       </button>
 
-      {/* Restore link */}
-      {onRestore && (
+      {/* Restore link — only for non-PRO users */}
+      {!isPro && onRestore && (
         <button
           onClick={onRestore}
           className="mt-2 w-full py-2 text-sm text-teal underline hover:text-teal-dark"

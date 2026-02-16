@@ -379,7 +379,7 @@ export default function Home() {
 
       {/* IDLE STATE: Example carousel + CTA */}
       {appState === "idle" && (
-        <ExampleCarousel onTryIt={handleTryIt} onRestore={() => setPaywallOpen(true)} />
+        <ExampleCarousel onTryIt={handleTryIt} onRestore={() => setPaywallOpen(true)} isPro={isPremium()} />
       )}
 
       {/* Photo upload — show when photo selected, converting, or in error state */}
