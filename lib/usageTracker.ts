@@ -1,6 +1,6 @@
 "use client";
 
-const FREE_USES_PER_DAY = 50;
+const FREE_USES_PER_DAY = 5;
 const PREMIUM_USES_PER_DAY = 20;
 
 // Premium storage keys

@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       caption: { top: memeCaption.top, bottom: memeCaption.bottom },
-      petY: memeCaption.petY,
+      petFaceY: memeCaption.petFaceY,
     });
   } catch (err) {
     console.error("Translation error:", err);

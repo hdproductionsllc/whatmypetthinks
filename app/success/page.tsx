@@ -18,7 +18,7 @@ function SuccessContent() {
       return;
     }
 
-    async function verifySession() {
+    async function verifySession(attempt = 1): Promise<void> {
       try {
         const res = await fetch("/api/verify-session", {
           method: "POST",
@@ -34,10 +34,17 @@ function SuccessContent() {
           activatePremium(data.email, data.customerId, data.premiumUntil);
           trackEvent("premium_activated", { source: "checkout" });
           setStatus("success");
+        } else if (attempt < 4) {
+          await new Promise((r) => setTimeout(r, attempt * 1500));
+          return verifySession(attempt + 1);
         } else {
           setStatus("error");
         }
       } catch {
+        if (attempt < 4) {
+          await new Promise((r) => setTimeout(r, attempt * 1500));
+          return verifySession(attempt + 1);
+        }
         setStatus("error");
       }
     }

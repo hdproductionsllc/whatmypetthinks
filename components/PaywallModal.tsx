@@ -156,7 +156,7 @@ export default function PaywallModal({
           <p className="mt-1 text-sm text-charcoal-light">
             {userIsPremium
               ? "Even PRO members have a daily limit. Come back tomorrow for 20 more!"
-              : "Your free translations reset tomorrow"}
+              : "You've used your 5 free translations today"}
           </p>
         </div>
 

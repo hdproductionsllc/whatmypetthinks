@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@fontsource/nunito": "^5.2.7",
     "@supabase/supabase-js": "^2.95.3",
     "@vladmandic/face-api": "^1.7.15",
     "heic2any": "^0.0.4",

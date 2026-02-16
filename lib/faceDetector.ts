@@ -33,7 +33,7 @@ export async function hasFaces(dataUrl: string): Promise<boolean> {
 
     const detections = await api.detectAllFaces(
       img,
-      new api.TinyFaceDetectorOptions({ scoreThreshold: 0.5 })
+      new api.TinyFaceDetectorOptions({ scoreThreshold: 0.4 })
     );
 
     return detections.length > 0;

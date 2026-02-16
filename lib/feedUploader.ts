@@ -50,8 +50,8 @@ export function uploadTranslation(
       if (now - lastUploadTime < UPLOAD_COOLDOWN_MS) return;
       lastUploadTime = now;
 
-      // Skip upload if human faces detected in the image
-      if (await hasFaces(standardDataUrl)) return;
+      // Check for human faces — still upload but mark as non-public
+      const faceDetected = await hasFaces(standardDataUrl);
 
       // Compress to JPEG (PNG composites are 3-5MB, JPEG brings them to ~200-500KB)
       const blob = await compressToJpeg(standardDataUrl);
@@ -83,7 +83,7 @@ export function uploadTranslation(
         .from("Translations")
         .getPublicUrl(filename);
 
-      // Insert row into translations table
+      // Insert row into translations table (face-detected images stored but hidden from feed)
       const { error: insertError } = await supabase
         .from("translations")
         .insert({
@@ -91,6 +91,7 @@ export function uploadTranslation(
           format_type: formatType,
           voice_style: voiceStyle,
           pet_name: cleanName,
+          is_public: !faceDetected,
         });
 
       if (insertError) {
