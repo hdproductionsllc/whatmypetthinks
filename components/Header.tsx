@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 
 interface Props {
   creditRefresh?: number;
+  onOpenPaywall?: () => void;
 }
 
-export default function Header({ creditRefresh }: Props) {
+export default function Header({ creditRefresh, onOpenPaywall }: Props) {
   const [creditsLeft, setCreditsLeft] = useState<number | null>(null);
   const [premium, setPremium] = useState(false);
 
@@ -22,7 +23,10 @@ export default function Header({ creditRefresh }: Props) {
         🐾 What My Pet Thinks
       </h1>
       {creditsLeft !== null && (
-        <div className="flex items-center gap-1.5">
+        <button
+          onClick={onOpenPaywall}
+          className="flex items-center gap-1.5"
+        >
           {premium && (
             <span className="rounded-full bg-amber px-2 py-0.5 text-xs font-bold text-white">
               PRO
@@ -39,7 +43,7 @@ export default function Header({ creditRefresh }: Props) {
               ? `🐾 ${creditsLeft} left today`
               : "0 left today"}
           </div>
-        </div>
+        </button>
       )}
     </header>
   );

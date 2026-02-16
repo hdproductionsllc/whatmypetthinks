@@ -367,7 +367,7 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
-      <Header creditRefresh={creditRefresh} />
+      <Header creditRefresh={creditRefresh} onOpenPaywall={() => setPaywallOpen(true)} />
 
       {/* Offline banner */}
       {isOffline && (
