@@ -249,7 +249,7 @@ export async function translatePetPhoto(
 
   async function attempt(): Promise<MemeCaption> {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-6",
       max_tokens: 512,
       system: systemPrompt,
       messages: [
@@ -326,7 +326,7 @@ export async function generatePetConvo(
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: systemPrompt,
       messages: [
