@@ -112,8 +112,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { imageBase64, mediaType, voiceStyle = "funny", petName, pronouns, format = "caption", customerId } = body;
 
-    // Free user (no customerId) → check global daily cap
-    if (!customerId) {
+    // Validate customerId format (Stripe customer IDs start with "cus_")
+    const validCustomerId = typeof customerId === "string" && customerId.startsWith("cus_") ? customerId : null;
+
+    // Free user (no valid customerId) → check global daily cap
+    if (!validCustomerId) {
       const underCap = await checkAndIncrementFreeCap();
       if (!underCap) {
         return NextResponse.json(
