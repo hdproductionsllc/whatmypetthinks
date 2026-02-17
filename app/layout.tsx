@@ -74,7 +74,10 @@ export const metadata: Metadata = {
       "Find out what your pet would text you",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/icons/icon-192.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
     apple: "/icons/icon-192.png",
   },
   robots: {
