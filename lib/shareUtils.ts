@@ -54,7 +54,21 @@ export async function shareImage(
   }
 }
 
-export function downloadImage(dataUrl: string, filename?: string) {
+export async function downloadImage(dataUrl: string, filename?: string) {
+  // On iOS, anchor download saves to Files — use share sheet instead so
+  // the user gets "Save Image" which saves to camera roll.
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent) && navigator.share) {
+    try {
+      const blob = await dataUrlToBlob(dataUrl);
+      const file = new File([blob], filename || generateFilename(), { type: "image/png" });
+      await navigator.share({ files: [file] });
+      return;
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      // Fall through to anchor download if share fails
+    }
+  }
+
   const link = document.createElement("a");
   link.href = dataUrl;
   link.download = filename || generateFilename();

@@ -76,8 +76,11 @@ export default function ShareButtons({
 
   const handleSave = async () => {
     trackEvent("share_tapped", { platform: "save" });
-    downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
-    showToast("Saved! 🐾");
+    await downloadImage(standardImageUrl, generateFilename(voiceStyle, false, isConvo));
+    // On iOS the share sheet handles feedback; on other platforms show toast
+    if (!/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      showToast("Saved! 🐾");
+    }
   };
 
   const handleInstagram = async () => {
