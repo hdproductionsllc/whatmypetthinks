@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { translatePetPhoto, generatePetConvo, type VoiceStyle } from "@/lib/anthropic";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
 export const maxDuration = 30;
+
+// Global daily cap for free translations (cost protection)
+// 15,000 = ~5,000 free users × 3 each = ~$225 max daily API spend
+const FREE_DAILY_CAP = 15_000;
 
 // In-memory rate limiting (resets on cold start)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -23,6 +28,52 @@ function checkRateLimit(ip: string): boolean {
 
   entry.count++;
   return true;
+}
+
+function todayDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Increment global free counter and return whether under the cap */
+async function checkAndIncrementFreeCap(): Promise<boolean> {
+  if (!supabaseAdmin) return true; // fail-open if Supabase not configured
+
+  const date = todayDate();
+
+  try {
+    // Upsert: insert or increment
+    const { data, error } = await supabaseAdmin.rpc("increment_free_count", {
+      p_date: date,
+      p_cap: FREE_DAILY_CAP,
+    });
+
+    if (error) {
+      // If RPC doesn't exist yet, try raw upsert fallback
+      const { data: row } = await supabaseAdmin
+        .from("daily_stats")
+        .select("free_generations")
+        .eq("date", date)
+        .single();
+
+      const current = row?.free_generations ?? 0;
+      if (current >= FREE_DAILY_CAP) return false;
+
+      await supabaseAdmin
+        .from("daily_stats")
+        .upsert(
+          { date, free_generations: current + 1 },
+          { onConflict: "date" }
+        );
+
+      return true;
+    }
+
+    // RPC returns true if under cap, false if over
+    return data === true;
+  } catch {
+    return true; // fail-open on errors
+  }
 }
 
 const VALID_MEDIA_TYPES = [
@@ -59,7 +110,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { imageBase64, mediaType, voiceStyle = "funny", petName, pronouns, format = "caption" } = body;
+    const { imageBase64, mediaType, voiceStyle = "funny", petName, pronouns, format = "caption", customerId } = body;
+
+    // Free user (no customerId) → check global daily cap
+    if (!customerId) {
+      const underCap = await checkAndIncrementFreeCap();
+      if (!underCap) {
+        return NextResponse.json(
+          {
+            error: "We're so popular we hit our daily limit! Go PRO for guaranteed access, or come back tomorrow.",
+            atCapacity: true,
+          },
+          { status: 503 }
+        );
+      }
+    }
 
     if (!imageBase64 || !mediaType) {
       return NextResponse.json(

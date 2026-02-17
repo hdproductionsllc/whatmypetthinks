@@ -155,8 +155,8 @@ export default function PaywallModal({
           </h2>
           <p className="mt-1 text-sm text-charcoal-light">
             {userIsPremium
-              ? "Even PRO members have a daily limit. Come back tomorrow for 20 more!"
-              : "You've used your 5 free translations today"}
+              ? "Even PRO members have a daily limit. Come back tomorrow for 10 more!"
+              : "You've used your 3 free translations today"}
           </p>
         </div>
 
@@ -174,7 +174,7 @@ export default function PaywallModal({
         ) : (
           <div className="mt-5">
             <p className="mb-3 text-center text-sm text-charcoal-light">
-              Unlock 20/day with PRO
+              Unlock 10/day with PRO
             </p>
 
             {/* Subscribe button */}
@@ -183,11 +183,11 @@ export default function PaywallModal({
               disabled={isSubscribing}
               className="btn-press w-full rounded-2xl bg-amber px-6 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-amber-dark min-h-[52px] disabled:opacity-50"
             >
-              {isSubscribing ? "Opening checkout..." : "Go PRO — $3.99/mo"}
+              {isSubscribing ? "Opening checkout..." : "Go PRO — $5.99/mo"}
             </button>
 
             <p className="mt-2 text-center text-xs text-charcoal/40">
-              20 translations/day · Cancel anytime
+              10 translations/day · Cancel anytime
             </p>
 
             {/* Restore purchase */}

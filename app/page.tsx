@@ -26,6 +26,7 @@ import {
   isPremium,
   isPremiumExpired,
   reverifyPremium,
+  getPremiumCustomerId,
 } from "@/lib/usageTracker";
 import { trackEvent } from "@/lib/analytics";
 import { playMessageSound } from "@/lib/sounds";
@@ -225,6 +226,7 @@ export default function Home() {
           petName: nameToUse || undefined,
           pronouns: petPronouns || undefined,
           format,
+          customerId: getPremiumCustomerId() || undefined,
         }),
       });
 
