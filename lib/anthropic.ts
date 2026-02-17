@@ -245,7 +245,7 @@ export async function translatePetPhoto(
 
   const userText = `Create a two-part meme caption for this pet photo.${
     petName ? ` The pet's name is ${petName}.` : ""
-  }${pronouns ? ` Use ${pronouns} pronouns.` : ""}`;
+  }${pronouns ? ` Use ${pronouns} pronouns.` : ""} Return ONLY the JSON object, no other text.`;
 
   async function attempt(): Promise<MemeCaption> {
     const response = await client.messages.create({
@@ -267,10 +267,6 @@ export async function translatePetPhoto(
             { type: "text", text: userText },
           ],
         },
-        {
-          role: "assistant",
-          content: "{",
-        },
       ],
     });
 
@@ -279,8 +275,14 @@ export async function translatePetPhoto(
       throw new Error("No text response from AI");
     }
 
-    let raw = "{" + textBlock.text.trim();
-    raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    let raw = textBlock.text.trim();
+    // Strip markdown fences if present
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (fenceMatch) raw = fenceMatch[1];
+    // Extract JSON object
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start !== -1 && end !== -1) raw = raw.slice(start, end + 1);
 
     const parsed = JSON.parse(raw);
 
@@ -322,7 +324,7 @@ export async function generatePetConvo(
   const angle = pickFreshAngle();
   const userText = `Create a text conversation between this pet and their owner. The pet's contact name is "${contactName}".${
     pronouns ? ` Use ${pronouns} pronouns for the pet.` : ""
-  }\n\nComedic angle to explore (adapt to what you see in the photo — skip if it doesn't fit the image): ${angle}`;
+  }\n\nComedic angle to explore (adapt to what you see in the photo — skip if it doesn't fit the image): ${angle}\n\nReturn ONLY the JSON object, no other text.`;
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({
@@ -344,10 +346,6 @@ export async function generatePetConvo(
             { type: "text", text: userText },
           ],
         },
-        {
-          role: "assistant",
-          content: "{",
-        },
       ],
     });
 
@@ -356,11 +354,14 @@ export async function generatePetConvo(
       throw new Error("No text response from AI");
     }
 
-    // Reconstruct full JSON (we prefilled the opening brace)
-    let raw = "{" + textBlock.text.trim();
-
+    let raw = textBlock.text.trim();
     // Strip markdown fences if present
-    raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (fenceMatch) raw = fenceMatch[1];
+    // Extract JSON object
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start !== -1 && end !== -1) raw = raw.slice(start, end + 1);
 
     const parsed = JSON.parse(raw);
 
