@@ -168,8 +168,8 @@ export async function POST(request: NextRequest) {
     const cleanName = typeof petName === "string"
       ? petName.replace(/[^a-zA-Z0-9 .\-']/g, "").slice(0, 20).trim() || undefined
       : undefined;
-    const validPronouns = ["he/him", "she/her", "they/them"];
-    const cleanPronouns = validPronouns.includes(pronouns) ? pronouns : undefined;
+    const validGenders = ["male", "female"];
+    const cleanPronouns = validGenders.includes(pronouns) ? pronouns : undefined;
 
     if (format === "convo") {
       const messages = await generatePetConvo(

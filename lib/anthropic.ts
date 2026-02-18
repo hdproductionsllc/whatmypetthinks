@@ -44,7 +44,7 @@ RULES:
 - STRONG PERSONALITY: This pet has opinions, grudges, schemes, and a worldview
 - Species-specific humor: Dogs = loyalty/food/anxiety. Cats = superiority/plotting/dry wit. Others = lean into quirks.
 - Deadpan tone. No exclamation marks.
-- NEVER assume gender for any pet, animal, or person. Use "they/them" or gender-neutral terms ("sibling" not "brother/sister", "human" not "mom/dad"). Exception: if the user specifies pronouns, use those.
+- Don't assume the pet's gender unless the user specifies it.
 - STRICTLY OFF-LIMITS: death, dying, being put down, euthanasia, abuse, neglect, illness, abandonment, or anything sad/morbid
 - Never be mean-spirited, crude, or inappropriate
 - Never use hashtags or emojis
@@ -154,7 +154,7 @@ SPECIES PERSONALITY (match to what you ACTUALLY identified in Step 1):
 - Small dogs: texts threats they cannot back up
 - Multiple pets: If you see two cats, BOTH are cats. If you see two dogs, BOTH are dogs. Use the correct species personality for each animal based on your Step 1 analysis.
 
-GENDER: NEVER assume gender for any pet, animal, or person. Use "they/them" or gender-neutral terms ("sibling" not "brother/sister", "human" not "mom/dad"). Exception: if the user specifies pronouns, use those for that pet only.
+GENDER: Don't assume the pet's gender unless the user specifies it.
 
 GROUNDING CHECK: Before returning, re-read your analysis. Does every detail in the conversation match the photo? If not, fix it.
 
@@ -248,9 +248,10 @@ export async function translatePetPhoto(
     ? `${SYSTEM_PROMPT}\n\nIMPORTANT additional voice direction (apply to both top and bottom lines): ${voiceModifier}`
     : SYSTEM_PROMPT;
 
+  const genderHint = pronouns === "male" ? " The pet is a boy — use he/him." : pronouns === "female" ? " The pet is a girl — use she/her." : "";
   const userText = `Create a two-part meme caption for this pet photo.${
     petName ? ` The pet's name is ${petName}.` : ""
-  }${pronouns ? ` Use ${pronouns} pronouns.` : ""} First carefully identify every animal's species in the "analysis" field, then write the caption. Return ONLY the JSON object, no other text.`;
+  }${genderHint} First carefully identify every animal's species in the "analysis" field, then write the caption. Return ONLY the JSON object, no other text.`;
 
   async function attempt(): Promise<MemeCaption> {
     const response = await client.messages.create({
@@ -335,9 +336,8 @@ export async function generatePetConvo(
 
   const contactName = petName || "Pet";
   const angle = pickFreshAngle();
-  const userText = `Create a text conversation between this pet and their owner. The pet's contact name is "${contactName}".${
-    pronouns ? ` Use ${pronouns} pronouns for the pet.` : ""
-  }\n\nComedic angle to explore (adapt to what you see in the photo — skip if it doesn't fit the image): ${angle}\n\nIMPORTANT: In your "analysis" field, precisely identify the species of EVERY animal visible (cat vs dog vs other). Then write the conversation matching those species. Return ONLY the JSON object, no other text.`;
+  const genderHint = pronouns === "male" ? " The pet is a boy — use he/him." : pronouns === "female" ? " The pet is a girl — use she/her." : "";
+  const userText = `Create a text conversation between this pet and their owner. The pet's contact name is "${contactName}".${genderHint}\n\nComedic angle to explore (adapt to what you see in the photo — skip if it doesn't fit the image): ${angle}\n\nIMPORTANT: In your "analysis" field, precisely identify the species of EVERY animal visible (cat vs dog vs other). Then write the conversation matching those species. Return ONLY the JSON object, no other text.`;
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({

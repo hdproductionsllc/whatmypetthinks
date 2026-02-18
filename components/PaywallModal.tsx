@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   isPremium,
   getPremiumCustomerId,
+  getAvailableCredits,
   activatePremium,
 } from "@/lib/usageTracker";
 import { trackEvent } from "@/lib/analytics";
@@ -27,6 +28,8 @@ export default function PaywallModal({
 
   const userIsPremium = isPremium();
   const customerId = getPremiumCustomerId();
+  const creditsLeft = getAvailableCredits();
+  const proHasCredits = userIsPremium && creditsLeft > 0;
 
   // Reset restore state when modal opens
   useEffect(() => {
@@ -136,7 +139,7 @@ export default function PaywallModal({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Daily limit reached"
+      aria-label={proHasCredits ? "PRO account" : "Daily limit reached"}
     >
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-bounce-in">
         {/* Close button */}
@@ -163,18 +166,23 @@ export default function PaywallModal({
         <div className="text-center">
           <div className="mb-3 text-4xl">{userIsPremium ? "✨" : "🐾"}</div>
           <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-charcoal">
-            {userIsPremium ? "PRO Limit Reached" : "Daily Limit Reached"}
+            {proHasCredits
+              ? "PRO Account"
+              : userIsPremium
+                ? "PRO Limit Reached"
+                : "Daily Limit Reached"}
           </h2>
           <p className="mt-1 text-sm text-charcoal-light">
-            {userIsPremium
-              ? "Even PRO members have a daily limit. Come back tomorrow for 20 more!"
-              : "You've used your 3 free translations today"}
+            {proHasCredits
+              ? `You have ${creditsLeft} translation${creditsLeft === 1 ? "" : "s"} left today`
+              : userIsPremium
+                ? "Even PRO members have a daily limit. Come back tomorrow for 20 more!"
+                : "You've used your 3 free translations today"}
           </p>
         </div>
 
         {/* Subscribe / Manage section */}
         {userIsPremium ? (
-          // Premium user who hit the 20+share limit
           <div className="mt-4 text-center">
             <button
               onClick={handleManageSubscription}

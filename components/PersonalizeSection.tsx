@@ -5,10 +5,9 @@ import { useState } from "react";
 const STORAGE_KEY_NAME = "petsubtitles_pet_name";
 const STORAGE_KEY_PRONOUNS = "petsubtitles_pet_pronouns";
 
-const PRONOUN_OPTIONS = [
-  { value: "he/him", label: "he/him" },
-  { value: "she/her", label: "she/her" },
-  { value: "they/them", label: "they/them" },
+const GENDER_OPTIONS = [
+  { value: "male", label: "Boy" },
+  { value: "female", label: "Girl" },
 ];
 
 interface Props {
@@ -83,7 +82,7 @@ export default function PersonalizeSection({
             className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-amber focus:ring-2 focus:ring-amber/20"
           />
           <div className="mt-2 flex gap-2">
-            {PRONOUN_OPTIONS.map((opt) => (
+            {GENDER_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => handlePronounsChange(opt.value)}
