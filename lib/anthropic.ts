@@ -289,7 +289,13 @@ export async function translatePetPhoto(
     const end = raw.lastIndexOf("}");
     if (start !== -1 && end !== -1) raw = raw.slice(start, end + 1);
 
-    const parsed = JSON.parse(raw);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("Failed to parse caption JSON");
+    }
 
     const top = typeof parsed.top === "string" ? parsed.top.trim() : "";
     const bottom = typeof parsed.bottom === "string" ? parsed.bottom.trim() : "";
@@ -370,7 +376,13 @@ export async function generatePetConvo(
     const end = raw.lastIndexOf("}");
     if (start !== -1 && end !== -1) raw = raw.slice(start, end + 1);
 
-    const parsed = JSON.parse(raw);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("Failed to parse convo JSON");
+    }
 
     // Extract messages from the analysis object
     const messagesArray = parsed.messages;

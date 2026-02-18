@@ -1,7 +1,7 @@
 "use client";
 
 const FREE_USES_PER_DAY = 3;
-const PREMIUM_USES_PER_DAY = 10;
+const PREMIUM_USES_PER_DAY = 20;
 
 // Premium storage keys
 const PREMIUM_KEY = "wmpt_premium";

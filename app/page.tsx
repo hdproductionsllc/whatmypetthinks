@@ -180,7 +180,8 @@ export default function Home() {
         }),
       });
       if (!res.ok) return true; // fail-open if detection service errors
-      const data = await res.json();
+      let data: { hasPet?: boolean };
+      try { data = JSON.parse(await res.text()); } catch { return true; }
       if (!data.hasPet) {
         trackEvent("pet_detection_failed");
         setError("We don't see a pet in this photo! Try uploading a picture with your furry (or scaly) friend front and center.");
