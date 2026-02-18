@@ -179,6 +179,7 @@ export default function Home() {
           mediaType: imageData.mediaType,
         }),
       });
+      if (!res.ok) return true; // fail-open if detection service errors
       const data = await res.json();
       if (!data.hasPet) {
         trackEvent("pet_detection_failed");
@@ -230,11 +231,13 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Translation failed");
+        let message = "Translation failed";
+        try { const err = await res.json(); message = err.error || message; } catch {}
+        throw new Error(message);
       }
+
+      const data = await res.json();
 
       let composited;
       let displayCaption: string;

@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+  maxRetries: 0,   // Don't retry at SDK level — we handle retries for parse errors
+  timeout: 25_000, // 25s hard cap per API call (Vercel limit is 30s)
 });
 
 export interface MemeCaption {
@@ -303,10 +305,12 @@ export async function translatePetPhoto(
     return { top, bottom, petFaceY };
   }
 
-  // Try once, retry on failure
+  // Try once; retry only on fast failures (parse errors), not timeouts/API errors
+  const start = Date.now();
   try {
     return await attempt();
-  } catch {
+  } catch (err) {
+    if (Date.now() - start > 12_000) throw err;
     return await attempt();
   }
 }
@@ -427,10 +431,12 @@ export async function generatePetConvo(
     return msgs;
   }
 
-  // Try once, retry on failure
+  // Try once; retry only on fast failures (parse errors), not timeouts/API errors
+  const start = Date.now();
   try {
     return await attempt();
-  } catch {
+  } catch (err) {
+    if (Date.now() - start > 12_000) throw err;
     return await attempt();
   }
 }
