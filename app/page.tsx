@@ -231,13 +231,22 @@ export default function Home() {
         }),
       });
 
-      if (!res.ok) {
-        let message = "Translation failed";
-        try { const err = await res.json(); message = err.error || message; } catch {}
-        throw new Error(message);
+      const text = await res.text();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Something went wrong. Please try again!"
+            : "Our pet translator is napping. Try again in a moment!"
+        );
       }
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Translation failed");
+      }
 
       let composited;
       let displayCaption: string;

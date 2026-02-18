@@ -59,8 +59,11 @@ export default function PaywallModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      const text = await res.text();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any;
+      try { data = JSON.parse(text); } catch { throw new Error("Checkout failed"); }
       if (!res.ok) throw new Error("Checkout failed");
-      const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -82,8 +85,11 @@ export default function PaywallModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: restoreEmail.trim() }),
       });
+      const text = await res.text();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any;
+      try { data = JSON.parse(text); } catch { throw new Error("Restore failed"); }
       if (!res.ok) throw new Error("Restore failed");
-      const data = await res.json();
       if (data.found) {
         activatePremium(data.email, data.customerId, data.premiumUntil);
         trackEvent("premium_restored");
@@ -109,7 +115,10 @@ export default function PaywallModal({
         body: JSON.stringify({ customerId }),
       });
       if (!res.ok) return;
-      const data = await res.json();
+      const text = await res.text();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any;
+      try { data = JSON.parse(text); } catch { return; }
       if (data.url) {
         window.location.href = data.url;
       }
