@@ -6,6 +6,14 @@ const client = new Anthropic({
   timeout: 25_000, // 25s hard cap per API call (Vercel limit is 30s)
 });
 
+// Every caption, conversation and reply is written by Claude Sonnet 5.5.
+const MODEL = "claude-sonnet-5-5";
+
+// No extended thinking: these are fast, short, funny, and inside a 25s cap.
+// Sonnet 5.5 refuses `thinking: { type: "disabled" }` with a 400; this is its
+// lowest setting instead. The pinned SDK's types predate it, hence the cast.
+const NO_THINKING = { type: "between_tools" } as unknown as Anthropic.ThinkingConfigParam;
+
 export interface MemeCaption {
   top: string;
   bottom: string;
@@ -268,11 +276,9 @@ export async function translatePetPhoto(
 
   async function attempt(): Promise<MemeCaption> {
     const response = await client.messages.create({
-      model: "claude-sonnet-5",
+      model: MODEL,
       max_tokens: 768,
-      // Sonnet 5 defaults to adaptive thinking (extra hidden tokens + latency);
-      // captions don't need it — keep generations fast and cheap.
-      thinking: { type: "disabled" },
+      thinking: NO_THINKING,
       system: systemBlocks,
       messages: [
         {
@@ -293,7 +299,7 @@ export async function translatePetPhoto(
     });
 
     const u = response.usage;
-    console.log(`[caption] tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
+    console.log(`[caption] stop=${response.stop_reason} tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
 
     const textBlock = response.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
@@ -371,9 +377,9 @@ export async function generatePetConvo(
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({
-      model: "claude-sonnet-5",
+      model: MODEL,
       max_tokens: 1536,
-      thinking: { type: "disabled" },
+      thinking: NO_THINKING,
       system: systemBlocks,
       messages: [
         {
@@ -394,7 +400,7 @@ export async function generatePetConvo(
     });
 
     const u = response.usage;
-    console.log(`[convo] tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
+    console.log(`[convo] stop=${response.stop_reason} tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
 
     const textBlock = response.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
@@ -522,9 +528,9 @@ export async function generatePetReply(
 
   async function attempt(): Promise<ConvoMessage[]> {
     const response = await client.messages.create({
-      model: "claude-sonnet-5",
+      model: MODEL,
       max_tokens: 512,
-      thinking: { type: "disabled" },
+      thinking: NO_THINKING,
       system: systemBlocks,
       messages: [
         {
@@ -545,7 +551,7 @@ export async function generatePetReply(
     });
 
     const u = response.usage;
-    console.log(`[reply] tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
+    console.log(`[reply] stop=${response.stop_reason} tokens in=${u.input_tokens} out=${u.output_tokens} cacheWrite=${u.cache_creation_input_tokens} cacheRead=${u.cache_read_input_tokens}`);
 
     const textBlock = response.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
